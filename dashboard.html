@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Andelaz Logistics - Panel Principal</title>
+
+  <!-- Ícono de la pestaña (Favicon) -->
+  <link rel="icon" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Librería Oficial Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="dashboard-body">
+
+<!-- ========================================== -->
+<!-- MENÚ LATERAL -->
+<!-- ========================================== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+    <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+    <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+    
+    <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+    <div class="has-submenu" data-group="distribucion-group">
+      <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+      <div class="submenu">
+        <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+      </div>
+    </div>
+    
+    <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+    <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+    <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+    <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+    
+    <!-- MENÚ DESPLEGABLE DE CONTRATISTAS -->
+    <div class="has-submenu" data-group="contratistas-group">
+      <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+      <div class="submenu">
+        <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+        <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+      </div>
+    </div>
+
+    <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+  </nav>
+
+  <!-- FOOTER DEL SIDEBAR: CAJA DE USUARIO Y CIERRE DE SESIÓN -->
+  <div class="sidebar-footer">
+    <div class="user-profile-card" id="user-profile-card">
+      <div class="profile-row">
+        <span class="profile-label">Empresa:</span>
+        <span class="profile-value" id="user-card-empresa">Cargando...</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">Usuario:</span>
+        <span class="profile-value" id="user-card-nombre">--</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">Rol:</span>
+        <span class="profile-value" id="user-card-rol">--</span>
+      </div>
+    </div>
+
+    <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+  </div>
+</aside>
+<!-- ========================================== -->
+<!-- FIN DEL MENÚ LATERAL -->
+<!-- ========================================== -->
+
+  <!-- Overlay para menú responsive en dispositivos móviles -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- AREA PRINCIPAL -->
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <h2 class="topbar-title">Dashboard</h2>
+        <p class="topbar-subtitle">Bienvenido al sistema de gestión</p>
+      </div>
+    </header>
+
+    <div class="panel-card">
+      <div class="panel-body">
+        <p>Seleccioná una opción del menú lateral para comenzar a trabajar.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- SCRIPT DE CONTROL DE PERMISOS, SEGURIDAD Y MENÚ RESPONSIVE -->
+  <!-- ================================================================= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Validar que exista una sesión activa en el navegador
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // =================================================================
+      // 2. OCULTAR ELEMENTOS DEL MENÚ DINÁMICAMENTE (Basado en data-perm)
+      //    Cualquier botón o enlace al que le pongas data-perm="lo_que_sea"
+      //    será evaluado automáticamente contra los permisos guardados
+      // =================================================================
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm"); // ej: "estado_rendicion", "dashboard", etc.
+        
+        // Busca tanto la clave limpia como la que tiene el prefijo "ver_" de Supabase
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+
+        // SEGURIDAD: Si el permiso es explícitamente false O si no viene definido en la sesión (undefined), 
+        // se oculta el elemento por defecto para evitar accesos no deseados.
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 3. LIMPIEZA DE TÍTULOS DE SECCIÓN VACÍOS
+      //    Si todos los enlaces debajo de un título (ej. "Operaciones" o "Altas")
+      //    quedan ocultos por falta de permisos, este bloque oculta el título también
+      // =================================================================
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          // Verifica enlaces directos
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          // Verifica submenús desplegables
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        // Si no hay nada visible en esta sección, se oculta el título
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 4. CONTROL DEL MENÚ RESPONSIVE (Móviles / Hamburguesa)
+      // =================================================================
+      const sidebar = document.getElementById("sidebar");
+      const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+      function cerrarMenu() {
+        if (sidebar) sidebar.classList.remove("active");
+        if (sidebarOverlay) sidebarOverlay.classList.remove("active");
+      }
+
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", () => {
+          cerrarMenu();
+        });
+      }
+
+      if (sidebar) {
+        const enlacesSidebar = sidebar.querySelectorAll("a");
+        enlacesSidebar.forEach(enlace => {
+          enlace.addEventListener("click", () => {
+            if (window.innerWidth <= 900) {
+              cerrarMenu();
+            }
+          });
+        });
+      }
+
+      // =================================================================
+      // 5. CIERRE DE SESIÓN SEGURO
+      // =================================================================
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+
+  <!-- Script principal del dashboard -->
+  <script src="dashboard.js"></script>
+
+</body>
+</html>

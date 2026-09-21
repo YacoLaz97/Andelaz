@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Gestión de Unidades</title>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- FontAwesome para Iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  <!-- Estilos Globales Unificados -->
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Estilos para el submenú desplegable de Contratistas */
+    .has-submenu {
+      position: relative;
+    }
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+      padding-left: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .has-submenu:hover .submenu {
+      max-height: 120px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    .submenu-item {
+      font-size: 13px;
+      color: #94a3b8;
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+      display: block;
+    }
+    .submenu-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+      <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+      
+      <!-- MENÚ DESPLEGABLE DE CONTRATISTAS (CON UNIDADES ADENTRO) -->
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item active" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL HASTA ACA-->
+  <!-- ========================================== -->
+
+  <!-- Overlay para menú responsive en dispositivos móviles -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main style="margin-left: 260px; padding: 20px 25px; width: calc(100% - 260px); box-sizing: border-box; height: 100vh; overflow: hidden; display: flex; flex-direction: column;">
+    
+    <header class="topbar" style="margin-bottom: 15px;">
+      <div>
+        <h1 class="topbar-title" style="font-size: 20px; font-weight: 700; color: var(--text-dark);">Gestión de Unidades</h1>
+        <p class="topbar-subtitle" style="font-size: 12px;">Alta de flota vehicular, control de asignación a contratistas y vencimientos de documentación.</p>
+      </div>
+    </header>
+
+    <div style="display: grid; grid-template-columns: 330px 1fr; gap: 20px; align-items: start; flex: 1; overflow: hidden;">
+      
+      <!-- COLUMNA IZQUIERDA: FORMULARIO DE ALTA -->
+      <div class="panel-card" style="display: flex; flex-direction: column; max-height: calc(100vh - 120px);">
+        <div class="panel-header" style="color: white; font-weight: 600; padding: 10px 15px; font-size: 13px;">Registrar Nueva Unidad</div>
+        <div class="panel-body" style="padding: 12px 15px; overflow-y: auto; flex: 1;">
+          <form id="form-unidad">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="patente" style="font-size: 11px; margin-bottom: 3px;">Patente</label>
+              <input type="text" id="patente" class="form-input" placeholder="Ej: AB123CD" required style="text-transform: uppercase; padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="tipo" style="font-size: 11px; margin-bottom: 3px;">Tipo de Vehículo</label>
+              <select id="tipo" class="form-input" required style="padding: 6px 10px; font-size: 12px;">
+                <option value="">Seleccione tipo de vehículo...</option>
+                <option value="bicicleta">Bicicleta</option>
+                <option value="moto">Moto</option>
+                <option value="automovil">Automovil</option>
+                <option value="utilitario chico">Utilitario chico</option>
+                <option value="utilitario grande">Utilitario grande</option>
+                <option value="chasis">Chasis</option>
+                <option value="balancin">Balancín</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="modelo" style="font-size: 11px; margin-bottom: 3px;">Modelo</label>
+              <input type="text" id="modelo" class="form-input" placeholder="Ej: Mercedes Sprinter" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="anio" style="font-size: 11px; margin-bottom: 3px;">Año</label>
+              <input type="number" id="anio" class="form-input" placeholder="Ej: 2022" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="contratista-id" style="font-size: 11px; margin-bottom: 3px;">Contratista Asignado</label>
+              <select id="contratista-id" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+                <option value="">Cargando contratistas...</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="vencimiento-cedula" style="font-size: 11px; margin-bottom: 3px;">Vencimiento Cédula</label>
+              <input type="date" id="vencimiento-cedula" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="vencimiento-seguro" style="font-size: 11px; margin-bottom: 3px;">Vencimiento Seguro</label>
+              <input type="date" id="vencimiento-seguro" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="vencimiento-vtv" style="font-size: 11px; margin-bottom: 3px;">Vencimiento VTV / RTO</label>
+              <input type="date" id="vencimiento-vtv" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <button type="submit" class="btn-primary-sm" style="width: 100%; padding: 8px; font-size: 12px;">Guardar Unidad</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: TABLA DE FLOTA REGISTRADA -->
+      <div class="panel-card" style="display: flex; flex-direction: column; max-height: calc(100vh - 120px);">
+        <div class="panel-header" style="color: white; font-weight: 600; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 15px; font-size: 13px;">
+          <span>Flota Registrada</span>
+          <!-- CAMPO DE BÚSQUEDA Y FILTRADO -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="text" id="input-buscar" class="form-input" placeholder="Filtrar por patente, tipo..." style="padding: 4px 8px; font-size: 12px; width: 180px; margin-bottom: 0; background: white;">
+            <span class="badge-count" id="badge-unidades-count">0 reg.</span>
+          </div>
+        </div>
+        <div class="panel-body" style="padding: 0; overflow-y: auto; flex: 1;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Patente</th>
+                <th>Tipo / Modelo</th>
+                <th>Contratista</th>
+                <th>Cédula</th>
+                <th>Seguro</th>
+                <th>VTV / RTO</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-unidades-body">
+              <tr>
+                <td colspan="8" class="empty-table-msg">Cargando unidades...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL DE EDICIÓN FLOTANTE -->
+  <div class="modal-overlay" id="modal-editar">
+    <div class="modal-card" style="max-width: 480px; text-align: left; max-height: 90vh; overflow-y: auto;">
+      <button class="modal-close" id="btn-close-editar" type="button">×</button>
+      <h3 id="editar-titulo" style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: var(--text-dark);">Editar Unidad y Documentación</h3>
+      <form id="form-editar">
+        <input type="hidden" id="edit-id">
+        
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-patente" style="font-size: 11px;">Patente</label>
+          <input type="text" id="edit-patente" class="form-input" required style="text-transform: uppercase;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-tipo" style="font-size: 11px;">Tipo de Vehículo</label>
+          <select id="edit-tipo" class="form-input" required>
+            <option value="bicicleta">Bicicleta</option>
+            <option value="moto">Moto</option>
+            <option value="automovil">Automovil</option>
+            <option value="utilitario chico">Utilitario chico</option>
+            <option value="utilitario grande">Utilitario grande</option>
+            <option value="chasis">Chasis</option>
+            <option value="balancin">Balancín</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-modelo" style="font-size: 11px;">Modelo</label>
+          <input type="text" id="edit-modelo" class="form-input">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-anio" style="font-size: 11px;">Año</label>
+          <input type="number" id="edit-anio" class="form-input">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-contratista-id" style="font-size: 11px;">Contratista Asignado</label>
+          <select id="edit-contratista-id" class="form-input">
+            <option value="">Seleccione contratista...</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-activo" style="font-size: 11px;">Estado</label>
+          <select id="edit-activo" class="form-input">
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
+          </select>
+        </div>
+
+        <!-- Cédula -->
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-cedula" style="font-size: 11px;">Vencimiento Cédula</label>
+          <input type="date" id="edit-cedula" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label style="font-size: 11px;">Subir / Cambiar Cédula (Imagen)</label>
+          <input type="file" id="file-cedula" class="form-input" accept="image/*">
+        </div>
+
+        <!-- Seguro -->
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-seguro" style="font-size: 11px;">Vencimiento Seguro</label>
+          <input type="date" id="edit-seguro" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label style="font-size: 11px;">Subir / Cambiar Seguro (Imagen)</label>
+          <input type="file" id="file-seguro" class="form-input" accept="image/*">
+        </div>
+
+        <!-- VTV -->
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="edit-vtv" style="font-size: 11px;">Vencimiento VTV / RTO</label>
+          <input type="date" id="edit-vtv" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label style="font-size: 11px;">Subir / Cambiar VTV (Imagen)</label>
+          <input type="file" id="file-vtv" class="form-input" accept="image/*">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn-primary-sm" style="width: 100%;">Guardar Cambios</button>
+          <button type="button" id="btn-cancelar-editar" class="btn-ghost-sm" style="width: 100%;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR -->
+  <div class="modal-overlay" id="modal-confirmar-eliminar">
+    <div class="modal-card" style="max-width: 380px;">
+      <h3 style="margin-bottom: 10px; font-size: 16px; font-weight: 600; color: #dc2626;">Confirmar Eliminación</h3>
+      <p id="eliminar-mensaje" style="color: var(--silver-gray); font-size: 13px; margin-bottom: 20px;">¿Estás seguro de que deseas eliminar esta unidad? Esta acción no se puede deshacer.</p>
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-confirmar-eliminar" class="btn-primary-sm" style="width: 100%; background: #dc2626;" type="button">Sí, Eliminar</button>
+        <button id="btn-cancelar-eliminar" class="btn-ghost-sm" style="width: 100%;" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VISOR DE IMÁGENES -->
+  <div class="modal-overlay" id="modal-visor-imagen">
+    <div class="modal-card" style="max-width: 90%;">
+      <button class="modal-close" id="btn-close-visor" type="button">×</button>
+      <h3 id="visor-titulo" style="font-size: 16px; font-weight: 600; margin-bottom: 10px; color: var(--text-dark);">Visualizar Documento</h3>
+      <img id="visor-img" src="" alt="Documento de unidad" style="max-height: 70vh; width: auto; display: block; margin: 0 auto;">
+      <div style="margin-top: 15px; text-align: center;">
+        <a id="visor-btn-descargar" href="" target="_blank" class="btn-primary-sm" download style="display:inline-block; text-decoration:none;">Descargar Original</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ALERTAS -->
+  <div class="modal-overlay" id="modal-alerta">
+    <div class="modal-card" style="max-width: 380px;">
+      <h3 id="alerta-titulo" style="margin-bottom: 10px; font-size: 16px; font-weight: 600;">Aviso</h3>
+      <p id="alerta-mensaje" style="color: var(--silver-gray); font-size: 13px; margin-bottom: 20px;"></p>
+      <button id="alerta-btn-aceptar" class="btn-primary-sm" style="width: 100%;" type="button">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- Script de control de permisos y redirección limpia -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // 1. Verificación estricta de permisos para unidades (soporta clave limpia y con "ver_")
+      const permisoModuloActual = permisos["unidad"] ?? permisos["ver_unidad"];
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          { key: 'dashboard', url: 'dashboard.html' },
+          { key: 'deposito', url: 'deposito.html' },
+          { key: 'distribucion', url: 'distribucion.html' },
+          { key: 'distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'entrega', url: 'reparto.html' },
+          { key: 'estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'clientes', url: 'clientes.html' },
+          { key: 'contratista', url: 'contratista.html' },
+          { key: 'chofer', url: 'chofer.html' },
+          { key: 'unidad', url: 'unidad.html' },
+          { key: 'usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          const valMod = permisos[mod.key] ?? permisos["ver_" + mod.key];
+          if (valMod === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // 2. Ocultar elementos del menú lateral según permisos
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+        
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // 3. Lógica para ocultar títulos de sección si no hay botones visibles
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // 4. Lógica de Cerrar Sesión limpia
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+
+  <!-- Script del Módulo de Unidades -->
+  <script src="unidad.js"></script>
+</body>
+</html>

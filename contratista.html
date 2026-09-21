@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Contratistas</title>
+  
+  <!-- Icono de pestaña solicitado -->
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    /* Forzar el grosor y estilos consistentes en el menú lateral */
+    .sidebar-item {
+      font-weight: 500;
+    }
+    .sidebar-item.active {
+      font-weight: 600;
+    }
+
+    /* Estilos para el submenú desplegable de Contratistas */
+    .has-submenu {
+      position: relative;
+    }
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+      padding-left: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .has-submenu:hover .submenu {
+      max-height: 120px; /* Suficiente para mostrar los dos enlaces */
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    .submenu-item {
+      font-size: 13px;
+      color: #94a3b8;
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+      display: block;
+    }
+    .submenu-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+
+    .contratista-container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 25px;
+      margin-bottom: 25px;
+    }
+    .asociados-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 25px;
+    }
+    @media (max-width: 968px) {
+      .contratista-container, .asociados-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card-box {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      border-color: #0284c7;
+    }
+    .badge-count {
+      background: #0284c7;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    tr.selected-row {
+      background-color: #f0fdf4 !important;
+      border-left: 4px solid #16a34a;
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+      <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+      
+      <!-- MENÚ DESPLEGABLE DE CONTRATISTAS (CON DISTRIBUCIÓN ADENTRO) -->
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item active" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL HASTA ACA-->
+  <!-- ========================================== -->
+
+  <!-- Overlay para menú responsive en dispositivos móviles -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="dashboard-main" style="margin-left: 260px; width: calc(100% - 260px); max-width: none; padding: 25px 35px;">
+    
+    <header class="topbar" style="margin-bottom: 25px;">
+      <h2>Gestión de Contratistas</h2>
+      <p class="topbar-subtitle">Alta y control de contratistas para facturación y asignaciones.</p>
+    </header>
+
+    <!-- FILA SUPERIOR: ALTA Y LISTADO DE CONTRATISTAS -->
+    <div class="contratista-container">
+      
+      <!-- FORMULARIO DE ALTA -->
+      <div class="card-box">
+        <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 18px; color: #1e293b;">Nuevo Contratista</h3>
+        <form id="form-contratista">
+          <div class="form-group">
+            <label for="razon-social">Razón Social</label>
+            <input type="text" id="razon-social" class="form-input" placeholder="Ej: Transportes del Sur SRL" required>
+          </div>
+          <div class="form-group">
+            <label for="cuit">CUIT</label>
+            <input type="text" id="cuit" class="form-input" placeholder="Ej: 30-71234567-9" required>
+          </div>
+          <button type="submit" class="btn-primary-sm" style="width: 100%; padding: 12px; margin-top: 10px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Guardar Contratista</button>
+        </form>
+
+        <!-- BOTONES DE CHOFERES Y UNIDADES DEBAJO DEL ALTA -->
+        <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 18px; display: flex; gap: 10px;">
+          <a href="chofer.html" style="flex: 1; text-align: center; text-decoration: none; background: #0f172a; color: #ffffff; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-block;">Choferes</a>
+          <a href="unidad.html" style="flex: 1; text-align: center; text-decoration: none; background: #0f172a; color: #ffffff; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-block;">Unidades</a>
+        </div>
+      </div>
+
+      <!-- LISTADO DE CONTRATISTAS -->
+      <div class="card-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="margin: 0; font-size: 18px; color: #1e293b;">Contratistas Registrados <span style="font-size:12px; font-weight:normal; color:#64748b;">(Click para seleccionar)</span></h3>
+          <span id="badge-count" class="badge-count">0 reg.</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>RAZÓN SOCIAL</th>
+                <th>CUIT</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-contratistas-body">
+              <tr><td colspan="3" class="empty-table-msg" style="text-align: center; padding: 20px; color: #64748b;">Cargando contratistas...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FILA INFERIOR: DOS CAJAS DE ASIGNACIONES -->
+    <div class="asociados-grid">
+      
+      <!-- CAJA IZQUIERDA: CHOFERES ASIGNADOS -->
+      <div class="card-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0; font-size: 16px; color: #1e293b;">Choferes Asignados</h3>
+          <span id="badge-choferes-count" class="badge-count" style="background-color: #64748b;">0 reg.</span>
+        </div>
+        <p id="contratista-seleccionado-chofer" style="font-size: 13px; color: #0284c7; font-weight: 600; margin-bottom: 15px;">Selecciona un contratista arriba</p>
+        <div style="overflow-x: auto;">
+          <table class="data-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>CHOFER</th>
+                <th>REGISTRO / VENC.</th>
+                <th>UNIDAD</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-choferes-asignados-body">
+              <tr><td colspan="3" class="empty-table-msg" style="text-align: center; padding: 15px; color: #64748b;">Sin seleccionar contratista.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CAJA DERECHA: UNIDADES ASIGNADAS -->
+      <div class="card-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0; font-size: 16px; color: #1e293b;">Unidades Asignadas</h3>
+          <span id="badge-unidades-count" class="badge-count" style="background-color: #16a34a;">0 reg.</span>
+        </div>
+        <p id="contratista-seleccionado-unidad" style="font-size: 13px; color: #16a34a; font-weight: 600; margin-bottom: 15px;">Selecciona un contratista arriba</p>
+        <div style="overflow-x: auto;">
+          <table class="data-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>PATENTE</th>
+                <th>TIPO / MODELO</th>
+                <th>VENCIMIENTOS (Céd/Seg/VTV)</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-unidades-asignadas-body">
+              <tr><td colspan="3" class="empty-table-msg" style="text-align: center; padding: 15px; color: #64748b;">Sin seleccionar contratista.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL: EDITAR CONTRATISTA -->
+  <div id="modal-editar" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index: 1000;">
+    <div class="modal-card" style="background:white; padding:25px; border-radius:12px; max-width:420px; width:90%; position:relative;">
+      <button id="btn-close-editar" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:20px; cursor:pointer; color:#64748b;">&times;</button>
+      <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #1e293b;">Editar Contratista</h3>
+      <form id="form-editar-contratista">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label for="edit-razon-social">Razón Social</label>
+          <input type="text" id="edit-razon-social" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-cuit">CUIT</label>
+          <input type="text" id="edit-cuit" class="form-input" required>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn-primary-sm" style="flex-grow: 1; padding: 12px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Actualizar</button>
+          <button type="button" id="btn-cancel-editar" style="padding: 12px; background-color: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL VISOR DE IMAGEN / DOCUMENTACIÓN -->
+  <div id="modal-visor-imagen" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index: 1200;">
+    <div style="background:white; padding:20px; border-radius:12px; max-width:700px; width:90%; text-align:center; position:relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <button id="btn-close-visor" style="position:absolute; top:10px; right:15px; background:none; border:none; font-size:26px; cursor:pointer; color:#64748b; font-weight:bold;">&times;</button>
+      <h3 id="visor-titulo" style="margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #1e293b;">Visualización de Documento</h3>
+      <div style="max-height: 65vh; overflow: auto; display: flex; justify-content: center; align-items: center; background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0;">
+        <img id="visor-img" src="" alt="Documento adjunto" style="max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 4px;">
+      </div>
+      <div style="margin-top: 15px;">
+        <a id="visor-btn-descargar" href="#" target="_blank" class="btn-primary-sm" style="display: inline-block; padding: 10px 20px; background: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">Abrir original en pestaña nueva</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN / ALERTA CARD -->
+  <div id="modal-alerta" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index: 1300;">
+    <div class="modal-card" style="background:white; padding:25px; border-radius:12px; max-width:400px; width:90%; text-align:center;">
+      <h3 id="alerta-titulo" style="margin-bottom: 10px;">Notificación</h3>
+      <p id="alerta-mensaje" style="color: #475569; font-size: 14px; margin-bottom: 20px;"></p>
+      <button id="alerta-btn-aceptar" class="btn-primary-sm" style="width: 100%; padding: 10px; background: #0284c7; color:white; border:none; border-radius:6px; cursor:pointer;">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- Script de control de permisos, visibilidad y redirección limpia -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // 1. Verificación estricta de permisos para contratistas (compatible con ambos formatos)
+      const permisoModuloActual = permisos["contratista"] ?? permisos["ver_contratista"];
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          { key: 'dashboard', url: 'dashboard.html' },
+          { key: 'deposito', url: 'deposito.html' },
+          { key: 'distribucion', url: 'distribucion.html' },
+          { key: 'distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'entrega', url: 'reparto.html' },
+          { key: 'estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'clientes', url: 'clientes.html' },
+          { key: 'contratista', url: 'contratista.html' },
+          { key: 'chofer', url: 'chofer.html' },
+          { key: 'unidad', url: 'unidad.html' },
+          { key: 'usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          const valMod = permisos[mod.key] ?? permisos["ver_" + mod.key];
+          if (valMod === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // 2. Ocultar elementos del menú lateral según permisos (evaluando clave limpia y con "ver_")
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+        
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // 3. Ocultar títulos de sección si no hay opciones visibles
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // 4. Lógica de Cerrar Sesión limpia
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+
+  <script src="contratista.js"></script>
+</body>
+</html>

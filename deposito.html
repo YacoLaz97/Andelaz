@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Depósito</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="dashboard-body">
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item active" data-perm="deposito">Logistica/Almacenamiento</a>
+    
+      <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+    
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+    
+      <!-- MENÚ DESPLEGABLE DE CONTRATISTAS -->
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <!-- BOTÓN DE CIERRE DE SESIÓN -->
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ========================================== -->
+
+  <main class="dashboard-main" style="margin-left: 260px; width: calc(100% - 260px); max-width: none; padding: 10px 20px; height: calc(100vh - 20px); box-sizing: border-box; display: flex; flex-direction: column;">
+    
+    <header class="topbar" style="margin-bottom: 8px; flex-shrink: 0;">
+      <h2>Control de Depósito</h2>
+      <p class="topbar-subtitle">Gestión de ingresos, lotes de paquetería y stock activo.</p>
+    </header>
+
+    <!-- CONTENEDOR GENERAL: Ocupa todo el alto disponible -->
+    <div style="display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0;">
+      
+      <!-- FILA 1: IN Y OUT (LADO A LADO) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex-shrink: 0;">
+        
+        <!-- DEPÓSITO IN -->
+        <div class="deposito-card" style="padding: 10px;">
+          <div class="deposito-card-header" style="flex-direction: column; align-items: stretch; gap: 8px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 style="margin: 0;">DEPÓSITO IN</h3>
+                <span id="badge-in-count" class="badge-count">0 reg.</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <button id="btn-open-upload" class="btn-primary-sm" style="flex: 1; background-color: #0284c7; padding: 8px 12px; font-size: 13px;"><i class="fa-solid fa-file-excel" style="margin-right: 6px;"></i> + Cargar Excel/CSV</button>
+              <button id="btn-open-delete-lote" class="btn-outline-sm" style="flex: 1; background-color: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;"><i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Eliminar Cargas</button>
+            </div>
+          </div>
+
+          <div class="filter-bar" style="margin-top: 6px; margin-bottom: 6px;">
+            <select id="select-filter-in-cliente" class="form-input" style="width: 160px; padding: 6px;">
+              <option value="">Todos los Clientes</option>
+            </select>
+            <input type="text" id="input-search-in" class="form-input" placeholder="Buscar con &..." style="flex-grow: 1; padding: 6px;">
+          </div>
+
+          <div class="scrollable-table" style="max-height: 160px; overflow-y: auto;">
+            <table class="data-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th style="width: 25%; padding: 6px 8px;">SKU / ID</th>
+                  <th style="width: 10%; padding: 6px 4px;">POSICIÓN</th>
+                  <th style="width: 24%; padding: 6px 8px;">DESTINATARIO</th>
+                  <th style="width: 14%; padding: 6px 8px;">TELÉFONO</th>
+                  <th style="width: 15%; padding: 6px 8px;">FECHA INGRESO</th>
+                  <th style="width: 12%; text-align: center; padding: 6px 8px;">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-in-body">
+                <tr><td colspan="6" class="empty-table-msg">Sin ingresos recientes.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- DEPÓSITO OUT -->
+        <div class="deposito-card" style="padding: 10px;">
+          <div class="deposito-card-header" style="padding: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h3 style="margin: 0;">DEPÓSITO OUT</h3>
+              <span id="badge-out-count" class="badge-count" style="background-color: #64748b;">0 reg.</span>
+            </div>
+          </div>
+
+          <div class="filter-bar" style="margin-top: 6px; margin-bottom: 6px;">
+            <select id="select-filter-out-cliente" class="form-input" style="width: 160px; padding: 6px;" disabled>
+              <option value="">Todos los Clientes</option>
+            </select>
+            <input type="text" class="form-input" placeholder="Buscar en OUT..." style="flex-grow: 1; padding: 6px;" disabled>
+          </div>
+
+          <div class="scrollable-table" style="max-height: 160px; overflow-y: auto;">
+            <table class="data-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th style="padding: 6px 8px;">SKU</th>
+                  <th style="padding: 6px 8px;">REPARTO / HR</th>
+                  <th style="padding: 6px 8px;">DESTINATARIO</th>
+                  <th style="padding: 6px 8px;">ESTADO</th>
+                  <th style="padding: 6px 8px;">SALIDA</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-out-body">
+                <tr><td colspan="5" class="empty-table-msg">Modulo preparado para lecturas de salida.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILA 2: DEPÓSITO STOCK -->
+      <div class="panel-card" style="background: #ffffff; border-radius: 12px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; width: 100%; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h3 style="margin: 0;">DEPÓSITO STOCK</h3>
+            <span id="badge-stock-count" class="badge-count" style="background-color: #16a34a; border-radius: 12px;">0 paquetes</span>
+          </div>
+          <button id="btn-refresh-stock" class="btn-ghost-sm" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">Actualizar</button>
+        </div>
+
+        <div class="panel-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+          <div class="filter-bar" style="margin-bottom: 6px; flex-shrink: 0;">
+            <select id="select-filter-stock-cliente" class="form-input" style="width: 180px; padding: 6px;">
+              <option value="">Todos los Clientes</option>
+            </select>
+            <input type="text" id="input-search-stock" class="form-input" placeholder="Buscar con &..." style="flex-grow: 1; padding: 6px;">
+          </div>
+
+          <div class="scrollable-table-large" style="flex: 1; min-height: 0; overflow-y: auto;">
+            <table class="data-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th style="width: 20%; padding: 6px 8px;">SKU / ID</th>
+                  <th style="width: 10%; padding: 6px 6px;">POSICIÓN</th>
+                  <th style="width: 25%; padding: 6px 8px;">DESTINATARIO</th>
+                  <th style="width: 15%; padding: 6px 8px;">TELÉFONO</th>
+                  <th style="width: 10%; text-align: center; padding: 6px 8px;">VUELTAS</th>
+                  <th style="width: 10%; padding: 6px 8px;">ESTADO</th>
+                  <th style="width: 10%; padding: 6px 8px;">FECHA INGRESO</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-stock-body">
+                <tr><td colspan="7" class="empty-table-msg">Cargando paquetes en depósito...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  
+  <!-- MODAL DE CARGA DE EXCEL / CSV -->
+  <div id="modal-upload" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px; text-align: left;">
+      
+      <!-- FASE 1: Formulario de Carga Inicial -->
+      <div id="upload-card-1">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="margin: 0; font-size: 18px; color: #0f172a;"><i class="fa-solid fa-file-excel" style="color: #0284c7; margin-right: 8px;"></i> Cargar Lote de Paquetes</h3>
+          <button id="btn-close-upload" type="button" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+        
+        <form id="upload-form">
+          <div class="form-group">
+            <label>Seleccionar Cliente:</label>
+            <select id="upload-cliente-select" class="form-input" required>
+              <option value="">-- Seleccionar Cliente --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Archivo Excel o CSV:</label>
+            <input type="file" id="upload-file-input" class="form-input" accept=".xlsx, .xls, .csv" required style="padding: 6px;" />
+          </div>
+
+          <!-- Barra de Progreso Oculta por defecto -->
+          <div id="upload-progress-container" style="display: none; margin: 20px 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+              <span id="progress-text">Procesando archivo...</span>
+              <span id="progress-percent">0%</span>
+            </div>
+            <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 10px; overflow: hidden;">
+              <div id="progress-bar" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+            <button type="button" id="btn-cancel-upload" class="btn-ghost-sm" style="padding: 8px 16px;">Cancelar</button>
+            <button type="submit" id="btn-process-upload" class="btn-primary-sm" style="padding: 8px 20px;">Procesar e Importar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- FASE 2: Corrección de Direcciones Nulas o No Encontradas -->
+      <div id="upload-card-2" style="display: none;">
+        <div class="modal-header" style="margin-bottom: 16px;">
+          <h2 style="font-size: 18px; color: #dc2626;"><i class="fa-solid fa-triangle-exclamation"></i> Direcciones No Encontradas</h2>
+          <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Edita los destinatarios que no pudieron geolocalizarse automáticamente y reintenta.</p>
+        </div>
+
+        <div style="max-height: 250px; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <table class="data-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th style="width: 35%;">SKU</th>
+                <th style="width: 65%;">Destinatario / Dirección</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-correccion-body">
+              <!-- Inyectado dinámicamente por JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" id="btn-reintentar-geo" class="btn-primary-sm" style="width: 100%; padding: 10px; background: #0284c7;">Reintentar Geolocalización y Volcar</button>
+          <button type="button" id="btn-cancel-correccion" class="btn-ghost-sm" style="width: 100%; padding: 10px;">Cancelar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL DE ALERTA GENERAL -->
+  <div id="modal-alerta" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px; text-align: center;">
+      <h3 id="alerta-titulo" style="margin-bottom: 10px; font-size: 18px;">Atención</h3>
+      <p id="alerta-mensaje" style="font-size: 14px; color: #475569; margin-bottom: 20px;"></p>
+      <button id="alerta-btn-aceptar" class="btn-primary-sm" style="width: 100%;">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE ELIMINAR LOTE DE CARGAS -->
+  <div id="modal-delete-lote" class="modal-overlay">
+    <div class="modal-card" style="max-width: 420px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; color: #0f172a;"><i class="fa-solid fa-trash-can" style="color: #ef4444; margin-right: 8px;"></i> Eliminar Lote de Carga</h3>
+        <button id="btn-close-delete-lote" type="button" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Selecciona el lote que deseas eliminar por completo del depósito:</p>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label>Lote de Carga:</label>
+        <select id="select-lote-delete" class="form-input">
+          <option value="">Cargando lotes...</option>
+        </select>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="btn-cancel-delete-lote" type="button" class="btn-ghost-sm" style="padding: 8px 16px;">Cancelar</button>
+        <button id="btn-confirm-delete-lote" type="button" class="btn-primary-sm" style="padding: 8px 20px; background-color: #ef4444;">Eliminar Lote</button>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPT DE CONTROL DE PERMISOS, SEGURIDAD Y SESIÓN -->
+  <!-- ========================================================================= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Validar que exista una sesión activa en el navegador
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // =================================================================
+      // 2. BLOQUEO ESTRICTO POR URL (Seguridad por módulo)
+      //    Si no tiene permiso para estar en depósito, redirigimos de forma segura
+      // =================================================================
+      const permisoModuloActual = permisos["deposito"] ?? permisos["ver_deposito"];
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          { key: 'dashboard', url: 'dashboard.html' },
+          { key: 'deposito', url: 'deposito.html' },
+          { key: 'distribucion', url: 'distribucion.html' },
+          { key: 'distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'entrega', url: 'reparto.html' },
+          { key: 'estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'clientes', url: 'clientes.html' },
+          { key: 'contratista', url: 'contratista.html' },
+          { key: 'chofer', url: 'chofer.html' },
+          { key: 'unidad', url: 'unidad.html' },
+          { key: 'usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          const valMod = permisos[mod.key] ?? permisos["ver_" + mod.key];
+          if (valMod === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // =================================================================
+      // 3. OCULTAR ELEMENTOS DEL MENÚ DINÁMICAMENTE (Basado en data-perm)
+      // =================================================================
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 4. LIMPIEZA DE TÍTULOS DE SECCIÓN VACÍOS
+      // =================================================================
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 5. CIERRE DE SESIÓN SEGURO
+      // =================================================================
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+  <!-- ========================================================================= -->
+
+  <script src="deposito.js"></script>
+</body>
+</html>

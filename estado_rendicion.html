@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AndeLazRoute - Estado y Rendición</title>
+  
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  
+  <!-- SDK de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ========================================== */
+    /* INICIO: ESTILOS RESPONSIVE PARA CELULARES  */
+    /* ========================================== */
+    .btn-hamburguesa {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--text-dark, #1e293b);
+      cursor: pointer;
+      padding: 5px;
+      margin-right: 15px;
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 999;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .main-content-layout {
+      margin-left: var(--sidebar-width, 260px);
+      padding: 20px 25px;
+      width: calc(100% - var(--sidebar-width, 260px));
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+
+    @media (max-width: 900px) {
+      .btn-hamburguesa {
+        display: inline-block;
+      }
+      
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        position: fixed;
+        height: 100vh;
+        top: 0;
+        left: 0;
+      }
+
+      .sidebar.active {
+        transform: translateX(0);
+      }
+
+      .main-content-layout {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 10px;
+        overflow: visible;
+      }
+    }
+    /* ========================================== */
+    /* FIN: ESTILOS RESPONSIVE PARA CELULARES     */
+    /* ========================================== */
+  </style>
+</head>
+<body class="dashboard-body">
+
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+      
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+      
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item active" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+      
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ========================================== -->
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content-layout">
+    
+    <header class="topbar" style="display: flex; align-items: center; margin-bottom: 20px;">
+      <button id="btn-hamburguesa" class="btn-hamburguesa" aria-label="Abrir Menú">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div>
+        <h2><i class="fas fa-tasks"></i> Control de Estado y Rendición</h2>
+        <p class="topbar-subtitle">Supervisión en tiempo real de distribuciones, paquetes y entregas de la empresa.</p>
+      </div>
+    </header>
+
+    <!-- FILTROS DE BÚSQUEDA Y SELECCIÓN -->
+    <section class="filters-section" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div class="filter-group" id="contenedor-filtro-chofer-admin" style="display: none;">
+            <label for="filtro-chofer-rendicion"><strong>Chofer:</strong></label>
+            <select id="filtro-chofer-rendicion" class="form-control" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="">-- Todos los choferes --</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="filtro-distribucion-rendicion"><strong>Distribución / Hoja de Ruta:</strong></label>
+            <select id="filtro-distribucion-rendicion" class="form-control" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="">-- Seleccione una distribución --</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- TARJETAS DE MÉTRICAS (KPIs) -->
+    <section class="kpi-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+        <div class="kpi-card" style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+            <span style="color: #64748b; font-size: 0.9rem;">Total Paquetes</span>
+            <h3 id="kpi-total" style="margin: 5px 0 0 0; font-size: 1.8rem; color: #1e293b;">0</h3>
+        </div>
+        <div class="kpi-card" style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+            <span style="color: #64748b; font-size: 0.9rem;">Entregados / Exitosos</span>
+            <h3 id="kpi-entregados" style="margin: 5px 0 0 0; font-size: 1.8rem; color: #10b981;">0</h3>
+        </div>
+        <div class="kpi-card" style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+            <span style="color: #64748b; font-size: 0.9rem;">Pendientes / En Curso</span>
+            <h3 id="kpi-pendientes" style="margin: 5px 0 0 0; font-size: 1.8rem; color: #f59e0b;">0</h3>
+        </div>
+    </section>
+
+    <!-- TABLA DE DETALLE DE REPARTO -->
+    <section class="table-responsive" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+        <table id="tabla-estado-reparto" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead style="background: #f1f5f9; color: #334155; border-bottom: 2px solid #e2e8f0;">
+                <tr>
+                    <th style="padding: 12px;">#</th>
+                    <th style="padding: 12px;">Destinatario / Cliente</th>
+                    <th style="padding: 12px;">Dirección</th>
+                    <th style="padding: 12px;">Estado</th>
+                    <th style="padding: 12px;">Observaciones / Detalle</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="5" style="text-align:center; padding: 30px; color: #64748b;">Seleccione una distribución para ver el detalle completo.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+  </main>
+
+  <!-- Script Funcional Específico de Estado y Rendición -->
+  <script src="estado_rendicion.js"></script>
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPT DE CONTROL DE PERMISOS, MENÚ Y SESIÓN -->
+  <!-- ========================================================================= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+      
+      const btnHamburguesa = document.getElementById("btn-hamburguesa");
+      const sidebar = document.getElementById("sidebar");
+      const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+      function abrirMenu() {
+        if (sidebar) sidebar.classList.add("active");
+        if (sidebarOverlay) sidebarOverlay.classList.add("active");
+      }
+
+      function cerrarMenu() {
+        if (sidebar) sidebar.classList.remove("active");
+        if (sidebarOverlay) sidebarOverlay.classList.remove("active");
+      }
+
+      if (btnHamburguesa) {
+        btnHamburguesa.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (sidebar && sidebar.classList.contains("active")) {
+            cerrarMenu();
+          } else {
+            abrirMenu();
+          }
+        });
+      }
+
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", () => {
+          cerrarMenu();
+        });
+      }
+
+      if (sidebar) {
+        const enlacesSidebar = sidebar.querySelectorAll("a");
+        enlacesSidebar.forEach(enlace => {
+          enlace.addEventListener("click", () => {
+            if (window.innerWidth <= 900) {
+              cerrarMenu();
+            }
+          });
+        });
+      }
+
+      // Verificación estricta utilizando el nombre exacto de la columna en Supabase: ver_estado_rendicion
+      if (permisos.ver_estado_rendicion === false) {
+        const ordenModulos = [
+          { key: 'ver_dashboard', url: 'dashboard.html' },
+          { key: 'ver_deposito', url: 'deposito.html' },
+          { key: 'ver_distribucion', url: 'distribucion.html' },
+          { key: 'ver_distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'ver_entrega', url: 'reparto.html' },
+          { key: 'ver_estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'ver_clientes', url: 'clientes.html' },
+          { key: 'ver_contratista', url: 'contratista.html' },
+          { key: 'ver_chofer', url: 'chofer.html' },
+          { key: 'ver_unidad', url: 'unidad.html' },
+          { key: 'ver_usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          if (permisos[mod.key] === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // Ocultar elementos del menú según permisos comprobando ambos formatos (con y sin prefijo ver_)
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        if (permisos["ver_" + clavePermiso] === false || permisos[clavePermiso] === false) {
+          el.style.display = "none";
+        }
+      });
+
+      // Lógica para ocultar títulos de sección si no hay opciones visibles
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // Lógica de Cerrar Sesión limpia
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+  <!-- ========================================================================= -->
+
+</body>
+</html>

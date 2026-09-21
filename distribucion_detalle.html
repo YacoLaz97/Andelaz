@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AndeLazRoute - Detalle y Mapa de Distribución</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .detalle-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding: 20px;
+    }
+    .top-control-panel {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 15px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .top-control-row {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .top-control-headers {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      width: 100%;
+      padding: 0 4px;
+    }
+    .top-control-headers span {
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .map-wrapper {
+      position: relative;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .map-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    #mapa-distribucion {
+      width: 100%;
+      height: 450px;
+      border-radius: 8px;
+      z-index: 1;
+    }
+    .bottom-table-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 15px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .actions-bar-final {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    /* Estilo para el botón de no asignados cuando está activo/presionado */
+    #btn-toggle-no-asignados.active-toggle {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #0284c7 !important;
+    }
+    /* Estilo unificado para las cajas verdes de contadores */
+    .badge-verde-custom {
+      background: #16a34a;
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      text-align: center;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+
+  <!-- MENÚ LATERAL -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+    
+      <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item active" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+    
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+    
+      <!-- MENÚ DESPLEGABLE DE CONTRATISTAS -->
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <!-- BOTÓN DE CIERRE DE SESIÓN -->
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!--=======================================================-->
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content" style="margin-left: 260px; width: calc(100% - 260px); max-width: 1550px; padding: 25px;">
+    <div class="detalle-container">
+      
+      <!-- TÍTULO PRINCIPAL -->
+      <div style="padding: 0 4px;">
+        <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0;">Modulo de Asignación de Paquetes</h2>
+      </div>
+
+      <!-- BLOQUE 1: CONTROLES SUPERIORES -->
+      <div class="top-control-panel">
+        <div class="top-control-headers">
+          <span>SELECCIONE UNA ID</span>
+        </div>
+        <div class="top-control-row">
+          <div class="control-group" style="display: flex; gap: 10px; align-items: center;">
+            <select id="select-distribucion-activa" class="form-input" style="width: 280px; font-weight: 600; background-color: #ffffff;">
+              <option value="">Seleccione ID no finalizada...</option>
+            </select>
+            <div class="badge-verde-custom">
+              <span id="contador-paquetes">0</span> Asignados
+            </div>
+          </div>
+
+          <div class="control-group" style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="input-search-general" placeholder="Buscar SKU, localidad, dirección..." class="form-input" style="font-size: 12px; padding: 6px; width: 240px; background-color: #ffffff;">
+            <button id="btn-filtrar-general" class="btn-ghost-sm" style="padding: 6px 12px; font-size: 12px; background: #0284c7; color: #fff; border-color: #0284c7;">Filtrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLOQUE 2: MAPA Y HERRAMIENTAS ESPACIALES -->
+      <div class="map-wrapper">
+        <div class="map-toolbar">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="btn-tool-plus" class="btn-ghost-sm" style="background: #dcfce7; color: #16a34a; border-color: #bbf7d0; font-size: 12px; padding: 6px 12px;">➕ Sumar Zona</button>
+            <button id="btn-tool-minus" class="btn-ghost-sm" style="background: #fee2e2; color: #dc2626; border-color: #fecaca; font-size: 12px; padding: 6px 12px;">➖ Restar Zona</button>
+            <button id="btn-tool-pan" class="btn-ghost-sm" style="background: #f1f5f9; color: #334155; font-size: 12px; padding: 6px 12px;">✋ Mover Mapa</button>
+          </div>
+          
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="badge-verde-custom">
+              <span id="contador-no-asignados">0</span> No Asignados
+            </div>
+            <button id="btn-toggle-no-asignados" class="btn-ghost-sm" style="font-size: 12px; padding: 6px 10px;">👁️ Mostrar / Ocultar No Asignados</button>
+          </div>
+        </div>
+
+        <div id="mapa-distribucion"></div>
+      </div>
+
+      <!-- BLOQUE 3: TABLA DETALLE DE PAQUETES ASIGNADOS -->
+      <div class="bottom-table-panel">
+        <div class="panel-header" style="margin-bottom: 12px; display: flex; justify-content: flex-start; align-items: center; gap: 15px;">
+          <h3 style="margin: 0;">Detalle de Paquetes en la Distribución Activa</h3>
+          <div class="badge-verde-custom" style="padding: 4px 12px; font-size: 12px;">
+            <span id="contador-paquetes-inferior">0</span> Asignados
+          </div>
+        </div>
+        <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Destinatario / Dirección</th>
+                <th>Teléfono</th>
+                <th>Orden (HR)</th>
+                <th>Vueltas</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-detalle-paquetes">
+              <tr><td colspan="5" class="empty-table-msg">Seleccione una distribución activa y trace zonas en el mapa para asignar paquetes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- BLOQUE 4: BOTONES DE ACCIÓN FINAL -->
+        <div class="actions-bar-final">
+          <button id="btn-guardar-asignacion" class="btn-primary-sm" style="background: #16a34a; padding: 10px 30px;">💾 Guardar Asignación</button>
+          <button id="btn-export-excel" class="btn-ghost-sm" style="border-color: #cbd5e1; padding: 10px 30px;">📊 Exportar Excel / CSV</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Scripts externos -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- ========================================================================= -->
+  <!-- SCRIPT DE CONTROL DE PERMISOS, SEGURIDAD Y SESIÓN -->
+  <!-- ========================================================================= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Validar que exista una sesión activa en el navegador
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // =================================================================
+      // 2. BLOQUEO ESTRICTO POR URL (Seguridad por módulo)
+      // =================================================================
+      const permisoModuloActual = permisos["distribucion_detalle"] ?? permisos["ver_distribucion_detalle"];
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          { key: 'dashboard', url: 'dashboard.html' },
+          { key: 'deposito', url: 'deposito.html' },
+          { key: 'distribucion', url: 'distribucion.html' },
+          { key: 'distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'entrega', url: 'reparto.html' },
+          { key: 'estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'clientes', url: 'clientes.html' },
+          { key: 'contratista', url: 'contratista.html' },
+          { key: 'chofer', url: 'chofer.html' },
+          { key: 'unidad', url: 'unidad.html' },
+          { key: 'usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          const valMod = permisos[mod.key] ?? permisos["ver_" + mod.key];
+          if (valMod === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // =================================================================
+      // 3. OCULTAR ELEMENTOS DEL MENÚ DINÁMICAMENTE (Basado en data-perm)
+      // =================================================================
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 4. LIMPIEZA DE TÍTULOS DE SECCIÓN VACÍOS
+      // =================================================================
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // Funcionalidad UI existente del botón toggle de no asignados
+      const btnToggleNoAsignados = document.getElementById("btn-toggle-no-asignados");
+      if (btnToggleNoAsignados) {
+        btnToggleNoAsignados.addEventListener("click", () => {
+          btnToggleNoAsignados.classList.toggle("active-toggle");
+        });
+      }
+
+      // Sincronizar el contador inferior con el superior
+      const contadorSuperior = document.getElementById("contador-paquetes");
+      const contadorInferior = document.getElementById("contador-paquetes-inferior");
+      if (contadorSuperior && contadorInferior) {
+        const observer = new MutationObserver(() => {
+          contadorInferior.textContent = contadorSuperior.textContent;
+        });
+        observer.observe(contadorSuperior, { childList: true, characterData: true, subtree: true });
+      }
+
+      // =================================================================
+      // 5. CIERRE DE SESIÓN SEGURO
+      // =================================================================
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+  <!-- ========================================================================= -->
+
+  <!-- Script principal de la vista -->
+  <script src="distribucion_detalle.js"></script>
+</body>
+</html>

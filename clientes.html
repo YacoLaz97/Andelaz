@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Alta de Clientes</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="dashboard-body">
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ SIMPLE.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="ver_dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="ver_deposito">Logistica/Almacenamiento</a>
+
+      <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="ver_distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="ver_distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+      
+      <a href="reparto.html" class="sidebar-item" data-perm="ver_entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="ver_estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item active" data-perm="ver_clientes">Clientes</a>
+      
+      <!-- MENÚ DESPLEGABLE DE CONTRATISTAS (CON DISTRIBUCIÓN ADENTRO) -->
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="ver_contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="ver_chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="ver_unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="ver_usuarios">Usuarios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL HASTA ACA-->
+  <!-- ========================================== -->
+
+  <!-- Overlay para menú responsive en dispositivos móviles -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="dashboard-main" style="margin-left: 260px; width: calc(100% - 260px); max-width: 1400px; padding: 30px;">
+    
+    <header class="topbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+      <div>
+        <h2>Gestión y Alta de Clientes</h2>
+        <p class="topbar-subtitle">Registra clientes, asigna prefijos de paquetería e identificadores de color.</p>
+      </div>
+      <button id="btn-open-modal" class="btn-primary-sm" style="padding: 10px 20px; font-size: 14px; border-radius: 8px;">+ Nuevo Cliente</button>
+    </header>
+
+    <!-- LISTADO DE CLIENTES PRINCIPAL -->
+    <div class="panel-card full-width">
+      <div class="panel-header header-with-action" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <h3>Clientes Registrados</h3>
+        
+        <!-- BUSCADOR EN TIEMPO REAL -->
+        <div style="display: flex; gap: 10px; align-items: center; width: 100%; max-width: 450px;">
+          <input type="text" id="input-search" class="form-input" placeholder="Buscar por Prefijo (ML), Razón Social o CUIT..." style="width: 100%;">
+          <button id="btn-refresh" class="btn-ghost-sm">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Prefijo ID</th>
+                <th>Razón Social</th>
+                <th>CUIT</th>
+                <th>Color Asignado</th>
+                <th>Ejemplo Visual Etiqueta</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-clientes-body">
+              <tr>
+                <td colspan="6" class="empty-table-msg">Cargando clientes de Supabase...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL FLOTANTE DE ALTA / EDICION -->
+  <div id="modal-cliente" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px; width: 90%;">
+      <button id="btn-close-modal" class="modal-close">&times;</button>
+      
+      <div class="modal-header">
+        <h2 id="form-title">Registrar Nuevo Cliente</h2>
+        <p>Asigna un prefijo para paquetería y un color identificativo.</p>
+      </div>
+
+      <form id="cliente-form">
+        <input type="hidden" id="cliente-id">
+
+        <div class="form-group">
+          <label for="razon_social">Razón Social / Nombre de Empresa</label>
+          <input type="text" id="razon_social" class="form-input" placeholder="Ej: Mercado Libre S.R.L." required>
+        </div>
+
+        <div class="form-group">
+          <label for="cuit">CUIT / Identificación Fiscal</label>
+          <input type="text" id="cuit" class="form-input" placeholder="Ej: 30-70308853-4" required>
+        </div>
+
+        <div class="form-group">
+          <label for="prefijo">Prefijo ID Paquetes (Ej: ML, iFW)</label>
+          <input type="text" id="prefijo" class="form-input" placeholder="Ej: ML" maxlength="10" style="text-transform: uppercase;" required>
+          <small style="color: #8e9aaf; font-size: 11px;">Este prefijo precederá al código de barras (Ej: MLa123456789).</small>
+        </div>
+
+        <div class="form-group">
+          <label>Color Identificativo para Listados y Paquetes</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="color" id="color_picker" value="#99fc90" style="width: 50px; height: 40px; border: none; cursor: pointer; border-radius: 6px;">
+            <input type="text" id="color_hex" class="form-input" value="#99fc90" maxlength="7" placeholder="#99fc90" style="width: 120px; font-weight: 600;">
+            <div id="color_preview_badge" class="status-badge" style="background-color: #99fc90; color: #000; font-size: 12px; padding: 6px 12px;">Vista Previa</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+          <button type="submit" id="btn-save" class="btn-primary-sm" style="flex-grow: 1; padding: 12px;">Guardar Cliente</button>
+          <button type="button" id="btn-cancel" class="btn-ghost-sm" style="padding: 12px;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL CARD PERSONALIZADA DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <div id="modal-confirm-delete" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px; width: 90%; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+      <h3 style="margin-bottom: 8px;">¿Confirmar eliminación?</h3>
+      <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Esta acción eliminará permanentemente el registro de la base de datos.</p>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="btn-confirm-delete-cancel" class="btn-ghost-sm" style="padding: 10px 20px;">Cancelar</button>
+        <button id="btn-confirm-delete-accept" class="btn-outline-sm" style="padding: 10px 20px; background-color: #ef4444; color: white; border: none;">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- SCRIPT DE CONTROL DE PERMISOS, SEGURIDAD Y MENÚ RESPONSIVE -->
+  <!-- ================================================================= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Validar que exista una sesión activa en el navegador
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // Función auxiliar para buscar permisos probando ambas variantes (con o sin 'ver_')
+      function obtenerPermiso(clave) {
+        if (!clave) return true;
+        const limpia = clave.replace(/^ver_/, '');
+        const conVer = 'ver_' + limpia;
+        
+        return permisos[clave] ?? permisos[conVer] ?? permisos[limpia];
+      }
+
+      // =================================================================
+      // 2. BLOQUEO ESTRICTO POR URL (Seguridad por módulo)
+      // =================================================================
+      const permisoModuloActual = obtenerPermiso('ver_clientes');
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          'ver_dashboard', 'ver_deposito', 'ver_distribucion', 'ver_distribucion_detalle', 
+          'ver_entrega', 'ver_estado_rendicion', 'ver_clientes', 'ver_contratista', 
+          'ver_chofer', 'ver_unidad', 'ver_usuarios'
+        ];
+
+        let destinoValido = 'index.html';
+        
+        const mapaArchivos = {
+          'ver_dashboard': 'dashboard.html', 'ver_deposito': 'deposito.html', 'ver_distribucion': 'distribucion.html',
+          'ver_distribucion_detalle': 'distribucion_detalle.html', 'ver_entrega': 'reparto.html', 'ver_estado_rendicion': 'estado_rendicion.html',
+          'ver_clientes': 'clientes.html', 'ver_contratista': 'contratista.html', 'ver_chofer': 'chofer.html', 'ver_unidad': 'unidad.html', 'ver_usuarios': 'usuarios.html'
+        };
+
+        for (const mod of ordenModulos) {
+          if (obtenerPermiso(mod) === true) {
+            destinoValido = mapaArchivos[mod];
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // =================================================================
+      // 3. OCULTAR ELEMENTOS DEL MENÚ DINÁMICAMENTE (Basado en data-perm)
+      // =================================================================
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = obtenerPermiso(clavePermiso);
+
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 4. LIMPIEZA DE TÍTULOS DE SECCIÓN VACÍOS
+      // =================================================================
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 5. CONTROL DEL MENÚ RESPONSIVE (Móviles / Hamburguesa)
+      // =================================================================
+      const sidebar = document.getElementById("sidebar");
+      const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+      function cerrarMenu() {
+        if (sidebar) sidebar.classList.remove("active");
+        if (sidebarOverlay) sidebarOverlay.classList.remove("active");
+      }
+
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", () => {
+          cerrarMenu();
+        });
+      }
+
+      if (sidebar) {
+        const enlacesSidebar = sidebar.querySelectorAll("a");
+        enlacesSidebar.forEach(enlace => {
+          enlace.addEventListener("click", () => {
+            if (window.innerWidth <= 900) {
+              cerrarMenu();
+            }
+          });
+        });
+      }
+
+      // =================================================================
+      // 6. CIERRE DE SESIÓN SEGURO
+      // =================================================================
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+
+  <!-- ARCHIVO DE LOGICA -->
+  <script src="clientes.js"></script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Panel Usuarios</title>
+  
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Estilos para el submenú desplegable de Contratistas */
+    .has-submenu {
+      position: relative;
+    }
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+      padding-left: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .has-submenu:hover .submenu {
+      max-height: 120px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    .submenu-item {
+      font-size: 13px;
+      color: #94a3b8;
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+      display: block;
+    }
+    .submenu-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+      
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item active" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ============================================= -->
+
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <main class="dashboard-main" style="margin-left: 260px; width: calc(100% - 260px); max-width: 1400px; padding: 30px;">
+    
+    <header class="topbar">
+      <div>
+        <h2>Gestión de Usuarios</h2>
+        <p class="topbar-subtitle">Administra los accesos, roles y permisos de la plataforma.</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <!-- CONTADOR DE USUARIOS -->
+        <div id="contador-usuarios-badge" style="background: linear-gradient(135deg, #1e293b, #0f172a); padding: 12px 20px; border-radius: 12px; font-size: 15px; font-weight: 700; color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 2px solid #3b82f6;">
+          Usuarios: Cargando...
+        </div>
+        <button id="btn-open-modal" class="btn-primary-sm" style="padding: 12px 24px; font-size: 14px; border-radius: 8px;">+ Nuevo Usuario</button>
+      </div>
+    </header>
+
+    <div class="panel-card full-width">
+      <div class="panel-header header-with-action">
+        <h3>Usuarios del Sistema</h3>
+        
+        <!-- BARRA DE FILTROS Y BÚSQUEDA CORREGIDA (flex: 1) -->
+        <div style="display: flex; gap: 10px; align-items: center; width: 100%; max-width: 600px;">
+          <select id="filtro-rol" class="form-input" style="width: 180px;">
+            <option value="">Todos los roles</option>
+            <option value="owner">Owner</option>
+            <option value="admin">Administrador</option>
+            <option value="deposito">Operador Depósito</option>
+            <option value="distribucion">Operador Distribución</option>
+            <option value="chofer">Chofer</option>
+            <option value="visualizador">Visualizador</option>
+          </select>
+          <input type="text" id="input-search" class="form-input" placeholder="Buscar por Nombre, Usuario o Rol..." style="flex: 1;">
+          <button id="btn-refresh" class="btn-ghost-sm">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Contraseña</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-usuarios-body">
+              <tr>
+                <td colspan="5" class="empty-table-msg">Cargando usuarios...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PIE DE VENTANA CON DATOS DE SOPORTE Y CONTACTO -->
+    <footer style="margin-top: 40px; padding: 20px; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+      <div style="font-size: 13px; color: #64748b;">
+        ¿Necesitas ampliar tu plan o tienes dudas con los accesos? Contacta a soporte técnico:
+      </div>
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <!-- REEMPLAZA ESTE NÚMERO Y TEXTO CON TU WHATSAPP REAL -->
+        <a href="https://wa.me/5491165763671" target="_blank" style="background: #25d366; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+          💬 WhatsApp: 1165763671
+        </a>
+        <!-- BOTÓN DE CORREO ADAPTADO PARA SOLO COPIAR EL EMAIL EN TEXTO PLANO -->
+        <button type="button" class="btn-copiar-correo" data-email="yaconlazarte22091997@gmail.com" style="background: #2563eb; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          ✉️ Correo: <span class="texto-email">Copiar correo.</span> <!-- REEMPLAZA ESTE CORREO POR EL TUYO -->
+        </button>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- MODAL DE REGISTRO Y EDICIÓN -->
+  <div id="modal-usuario" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px; width: 90%;">
+      <button id="btn-close-modal" class="modal-close">&times;</button>
+      
+      <div class="modal-header">
+        <h2 id="form-title">Registrar Nuevo Usuario</h2>
+        <p>Asigna credenciales y define el nivel de acceso.</p>
+      </div>
+
+      <form id="usuario-form">
+        <input type="hidden" id="usuario-id">
+
+        <div class="form-group">
+          <label for="nombre">Nombre Completo</label>
+          <input type="text" id="nombre" class="form-input" placeholder="Ej: Juan Pérez" required>
+        </div>
+
+        <div class="form-group">
+          <label for="usuario_name">Usuario (Login)</label>
+          <input type="text" id="usuario_name" class="form-input" placeholder="Ej: jperez" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña (Login)</label>
+          <div class="password-wrapper" style="display: flex; gap: 5px;">
+            <input type="text" id="password" class="form-input" placeholder="Contraseña en texto plano" style="flex-grow: 1;" required>
+          </div>
+          <small id="password-help" style="color: #8e9aaf; font-size: 11px; display: none;">Dejar en blanco si no deseas cambiar la contraseña.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="rol">Rol de Acceso</label>
+          <select id="rol" class="form-input" required>
+            <option value="admin">Administrador</option>
+            <option value="deposito">Operador Depósito</option>
+            <option value="distribucion">Operador Distribución</option>
+            <option value="chofer">Chofer</option>
+            <option value="visualizador">Visualizador</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+          <button type="submit" id="btn-save" class="btn-primary-sm" style="flex-grow: 1; padding: 12px;">Guardar Usuario</button>
+          <button type="button" id="btn-cancel" class="btn-ghost-sm" style="padding: 12px;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <div id="modal-confirm-delete" class="modal-overlay">
+    <div class="modal-card" style="max-width: 400px; width: 90%; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+      <h3 style="margin-bottom: 8px;">¿Confirmar eliminación?</h3>
+      <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Esta acción eliminará al usuario del sistema de forma permanente.</p>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="btn-confirm-delete-cancel" class="btn-ghost-sm" style="padding: 10px 20px;">Cancelar</button>
+        <button id="btn-confirm-delete-accept" class="btn-outline-sm" style="padding: 10px 20px; background-color: #ef4444; color: white; border: none;">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARJETA FLOTANTE DE NOTIFICACIONES / LÍMITE ALCANZADO -->
+  <div id="modal-alerta" class="modal-overlay" style="z-index: 3000;">
+    <div class="modal-card" style="max-width: 400px; text-align: center;">
+      <h4 id="alerta-titulo" style="font-size: 18px; font-weight: bold; margin-bottom: 10px;"></h4>
+      <p id="alerta-mensaje" style="font-size: 14px; color: #475569; margin-bottom: 20px; line-height: 1.5;"></p>
+      <div id="alerta-links-soporte" style="display: none; margin-bottom: 20px; justify-content: center; align-items: center; gap: 10px;">
+        <!-- REEMPLAZA EL ENLACE Y NÚMERO POR TU WHATSAPP REAL -->
+        <a href="https://wa.me/5491165763671" target="_blank" style="background: #25d366; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none;">WhatsApp</a>
+        
+        <!-- BOTÓN DE CORREO EN MODAL SIN DISPARAR CLIENTE DE EMAIL -->
+        <button type="button" class="btn-copiar-correo" data-email="yaconlazarte22091997@gmail.com" style="background: #2563eb; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; cursor: pointer;">
+          ✉️ <span class="texto-email">Copiar Correo</span> <!-- REEMPLAZA EL EMAIL EN data-email="..." ARRIBA CON EL TUYO -->
+        </button>
+      </div>
+      <button type="button" id="alerta-btn-aceptar" class="btn-primary-sm" style="width: 100%; padding: 10px;">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- Script de control de permisos y redirección limpia -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+      
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      const permisoModuloActual = permisos["usuarios"] ?? permisos["ver_usuarios"];
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          { key: 'dashboard', url: 'dashboard.html' },
+          { key: 'deposito', url: 'deposito.html' },
+          { key: 'distribucion', url: 'distribucion.html' },
+          { key: 'distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'entrega', url: 'reparto.html' },
+          { key: 'estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'clientes', url: 'clientes.html' },
+          { key: 'contratista', url: 'contratista.html' },
+          { key: 'chofer', url: 'chofer.html' },
+          { key: 'unidad', url: 'unidad.html' },
+          { key: 'usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          const valMod = permisos[mod.key] ?? permisos["ver_" + mod.key];
+          if (valMod === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+        
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+  <script src="usuarios.js"></script>
+</body>
+</html>

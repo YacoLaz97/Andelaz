@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Gestión Integral de Distribución</title>
+  
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  
+  <!-- SDK de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="dashboard-body">
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+    
+      <!-- MENÚ DESPLEGABLE DE DISTRIBUCIÓN -->
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item active" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+    
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+    
+      <!-- MENÚ DESPLEGABLE DE CONTRATISTAS -->
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <!-- BOTÓN DE CIERRE DE SESIÓN -->
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ============================================= -->
+
+  <main class="dashboard-main" style="margin-left: 260px; width: calc(100% - 260px); max-width: 1550px; padding: 25px;">
+    
+    <header class="topbar">
+      <div>
+        <h2>Módulo de Distribución y Asignación</h2>
+        <p class="topbar-subtitle">Control de hojas de ruta, choferes y alertas documentarias.</p>
+      </div>
+    </header>
+
+    <!-- GRILLA PRINCIPAL DE 2 COLUMNAS (ALTA DE DISTRIBUCIONES / FINALIZADAS) -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+      
+      <!-- COLUMNA IZQUIERDA: ALTA DISTRIBUCIÓN -->
+      <div class="panel-card" style="width: 100%;">
+        <div class="panel-header header-with-action">
+          <h3>Alta de Distribuciones</h3>
+          <div style="display: flex; gap: 10px; align-items: center; width: 100%; max-width: 400px;">
+            <input type="text" id="input-search-alta" class="form-input" placeholder="Buscar...">
+            <button id="btn-open-modal-dist" class="btn-primary-sm" style="white-space: nowrap;">+ Nueva</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID Automático</th>
+                  <th>Fecha</th>
+                  <th>Chofer Asignado</th>
+                  <th>Contratista</th>
+                  <th>Alertas Documentarias (Vencimientos)</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-alta-body">
+                <tr><td colspan="6" class="empty-table-msg">Cargando distribuciones...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: DISTRIBUCIONES FINALIZADAS -->
+      <div class="panel-card" style="width: 100%;">
+        <div class="panel-header" style="padding: 15px;">
+          <h3 style="font-size: 16px;">Distribuciones Finalizadas</h3>
+          <input type="text" id="filtro-finalizadas" class="form-input" placeholder="Buscar finalizadas..." style="margin-top: 8px; font-size: 12px; padding: 6px;">
+        </div>
+        <div class="panel-body" style="padding: 15px;">
+          <div id="contenedor-finalizadas" style="display: flex; flex-direction: column; gap: 12px; max-height: 700px; overflow-y: auto;">
+            <p style="font-size: 13px; color: #64748b; text-align: center;">No hay distribuciones finalizadas.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL DE NUEVA DISTRIBUCIÓN -->
+  <div id="modal-distribucion" class="modal-overlay">
+    <div class="modal-card" style="max-width: 450px; width: 90%;">
+      <button id="btn-close-modal" class="modal-close">&times;</button>
+      
+      <div class="modal-header">
+        <h2 id="modal-title-dist">Nueva Distribución</h2>
+        <p>Seleccione el chofer (con filtro por contratista).</p>
+      </div>
+
+      <form id="form-distribucion">
+        <input type="hidden" id="distribucion-edit-id">
+
+        <div class="form-group">
+          <label style="display: block; font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">ID de Distribución</label>
+          <input type="text" id="input-id-automatico" disabled style="width: 100%; padding: 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; color: #475569; font-weight: bold;" value="Auto-generado">
+        </div>
+
+        <div class="form-group">
+          <label for="select-contratista-filtro">Filtrar por Contratista (Opcional)</label>
+          <select id="select-contratista-filtro" class="form-input">
+            <option value="">Todos los contratistas</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="select-chofer-alta">Chofer Asignado</label>
+          <select id="select-chofer-alta" class="form-input" required>
+            <option value="">Seleccione chofer...</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" id="btn-submit-dist" class="btn-primary-sm" style="flex: 1; padding: 10px;">Crear Distribución</button>
+          <button type="button" id="btn-cancel-dist" class="btn-ghost-sm" style="padding: 10px;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE ALERTAS -->
+  <div id="modal-alerta" class="modal-overlay" style="z-index: 3000;">
+    <div class="modal-card" style="max-width: 360px; text-align: center;">
+      <h4 id="alerta-titulo" style="font-size: 18px; font-weight: bold; margin-bottom: 10px;"></h4>
+      <p id="alerta-mensaje" style="font-size: 14px; color: #475569; margin-bottom: 20px;"></p>
+      <button type="button" id="alerta-btn-aceptar" class="btn-primary-sm" style="width: 100%; padding: 10px;">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <div id="modal-confirm-delete" class="modal-overlay" style="z-index: 3000;">
+    <div class="modal-card" style="max-width: 380px; text-align: center;">
+      <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #dc2626;">¿Estás seguro?</h3>
+      <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">Esta acción eliminará el registro de forma permanente.</p>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" id="btn-confirm-delete-cancel" class="btn-ghost-sm" style="flex: 1; padding: 10px; justify-content: center;">Cancelar</button>
+        <button type="button" id="btn-confirm-delete-accept" class="btn-primary-sm" style="flex: 1; padding: 10px; background: #dc2626; justify-content: center;">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPT DE CONTROL DE PERMISOS, SEGURIDAD Y SESIÓN -->
+  <!-- ========================================================================= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Validar que exista una sesión activa en el navegador
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos || {};
+
+      // =================================================================
+      // 2. BLOQUEO ESTRICTO POR URL (Seguridad por módulo)
+      // =================================================================
+      const permisoModuloActual = permisos["distribucion"] ?? permisos["ver_distribucion"];
+      if (permisoModuloActual === false) {
+        const ordenModulos = [
+          { key: 'dashboard', url: 'dashboard.html' },
+          { key: 'deposito', url: 'deposito.html' },
+          { key: 'distribucion', url: 'distribucion.html' },
+          { key: 'distribucion_detalle', url: 'distribucion_detalle.html' },
+          { key: 'entrega', url: 'reparto.html' },
+          { key: 'estado_rendicion', url: 'estado_rendicion.html' },
+          { key: 'clientes', url: 'clientes.html' },
+          { key: 'contratista', url: 'contratista.html' },
+          { key: 'chofer', url: 'chofer.html' },
+          { key: 'unidad', url: 'unidad.html' },
+          { key: 'usuarios', url: 'usuarios.html' }
+        ];
+
+        let destinoValido = 'index.html';
+        for (const mod of ordenModulos) {
+          const valMod = permisos[mod.key] ?? permisos["ver_" + mod.key];
+          if (valMod === true) {
+            destinoValido = mod.url;
+            break;
+          }
+        }
+        window.location.replace(destinoValido);
+        return;
+      }
+
+      // =================================================================
+      // 3. OCULTAR ELEMENTOS DEL MENÚ DINÁMICAMENTE (Basado en data-perm)
+      // =================================================================
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        const valorPermiso = permisos[clavePermiso] ?? permisos["ver_" + clavePermiso];
+
+        if (valorPermiso === false || valorPermiso === undefined) {
+          el.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 4. LIMPIEZA DE TÍTULOS DE SECCIÓN VACÍOS
+      // =================================================================
+      const titulosSeccion = document.querySelectorAll(".sidebar-section-title");
+      titulosSeccion.forEach(titulo => {
+        let elementosHermanosVisibles = false;
+        let siguiente = titulo.nextElementSibling;
+        
+        while (siguiente && !siguiente.classList.contains("sidebar-section-title")) {
+          if (siguiente.tagName === "A" && siguiente.style.display !== "none") {
+            elementosHermanosVisibles = true;
+            break;
+          }
+          if (siguiente.classList.contains("has-submenu")) {
+            const itemsSub = siguiente.querySelectorAll("a");
+            for (const item of itemsSub) {
+              if (item.style.display !== "none") {
+                elementosHermanosVisibles = true;
+                break;
+              }
+            }
+            if (elementosHermanosVisibles) break;
+          }
+          siguiente = siguiente.nextElementSibling;
+        }
+
+        if (!elementosHermanosVisibles) {
+          titulo.style.display = "none";
+        }
+      });
+
+      // =================================================================
+      // 5. CIERRE DE SESIÓN SEGURO
+      // =================================================================
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+  <!-- ========================================================================= -->
+
+  <!-- Script principal -->
+  <script src="distribucion.js"></script>
+</body>
+</html>

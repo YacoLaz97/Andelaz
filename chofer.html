@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANDELAZ LOGISTICS - Gestión de Choferes</title>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- FontAwesome para Iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+  <!-- Estilos Globales Unificados -->
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Estilo distintivo para opciones de usuarios ya asignados en los selectores */
+    option.usuario-asignado {
+      background-color: #fee2e2 !important;
+      color: #991b1b !important;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- MENÚ LATERAL -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics" class="sidebar-logo">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="sidebar-item" data-perm="dashboard">Dashboard</a>
+
+      <div class="sidebar-section-title" data-section="operaciones">Operaciones</div>
+
+      <a href="deposito.html" class="sidebar-item" data-perm="deposito">Logistica/Almacenamiento</a>
+      <div class="has-submenu" data-group="distribucion-group">
+        <a href="distribucion.html" class="sidebar-item" data-perm="distribucion">Distribución</a>
+        <div class="submenu">
+          <a href="distribucion_detalle.html" class="submenu-item" data-perm="distribucion_detalle">Detalle / Mapa</a>
+        </div>
+      </div>
+      <a href="reparto.html" class="sidebar-item" data-perm="entrega">Transporte Carga</a>
+
+      <a href="estado_rendicion.html" class="sidebar-item" data-perm="estado_rendicion">Estado y Rendición</a>
+
+      <div class="sidebar-section-title" data-section="altas">Altas</div>
+
+      <a href="clientes.html" class="sidebar-item" data-perm="clientes">Clientes</a>
+      
+      <div class="has-submenu" data-group="contratistas-group">
+        <a href="contratista.html" class="sidebar-item active" data-perm="contratista">Contratistas</a>
+        <div class="submenu">
+          <a href="chofer.html" class="submenu-item active" data-perm="chofer">Choferes</a>
+          <a href="unidad.html" class="submenu-item" data-perm="unidad">Unidades</a>
+        </div>
+      </div>
+
+      <a href="usuarios.html" class="sidebar-item" data-perm="usuarios">Usuarios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="btn-logout" class="btn-logout" style="width: 100%; border: none; cursor: pointer; text-align: center;">Cerrar Sesión</button>
+    </div>
+  </aside>
+  <!-- ============================================= -->
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main style="margin-left: var(--sidebar-width); padding: 20px 25px; width: calc(100% - var(--sidebar-width)); box-sizing: border-box; height: 100vh; overflow: hidden; display: flex; flex-direction: column;">
+    
+    <header class="topbar" style="margin-bottom: 15px;">
+      <div>
+        <h1 class="topbar-title" style="font-size: 20px; font-weight: 700; color: var(--text-dark);">Gestión de Choferes</h1>
+        <p class="topbar-subtitle" style="font-size: 12px;">Alta de personal de conducción, asignación de contratistas y control de unidades.</p>
+      </div>
+    </header>
+
+    <div style="display: grid; grid-template-columns: 330px 1fr; gap: 20px; align-items: start; flex: 1; overflow: hidden;">
+      
+      <!-- COLUMNA IZQUIERDA: FORMULARIO -->
+      <div class="panel-card" style="display: flex; flex-direction: column; max-height: calc(100vh - 120px);">
+        <div class="panel-header" style="color: white; font-weight: 600; padding: 10px 15px; font-size: 13px;">Registrar Nuevo Chofer</div>
+        <div class="panel-body" style="padding: 12px 15px; overflow-y: auto; flex: 1;">
+          <form id="form-chofer">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="nombre" style="font-size: 11px; margin-bottom: 3px;">Nombre y Apellido</label>
+              <input type="text" id="nombre" class="form-input" placeholder="Ej: Juan Pérez" required style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="dni" style="font-size: 11px; margin-bottom: 3px;">DNI</label>
+              <input type="text" id="dni" class="form-input" placeholder="Ej: 35123456" required style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="telefono" style="font-size: 11px; margin-bottom: 3px;">Teléfono</label>
+              <input type="text" id="telefono" class="form-input" placeholder="Ej: 1122334455" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="contratista-select" style="font-size: 11px; margin-bottom: 3px;">Contratista Asignado</label>
+              <select id="contratista-select" class="form-input" style="padding: 6px 10px; font-size: 12px;" required>
+                <option value="">Seleccione un contratista...</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="usuario-select" style="font-size: 11px; margin-bottom: 3px;">Usuario Vinculado (Opcional)</label>
+              <select id="usuario-select" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+                <option value="">Sin usuario asociado...</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label for="vencimiento-licencia" style="font-size: 11px; margin-bottom: 3px;">Vencimiento Licencia</label>
+              <input type="date" id="vencimiento-licencia" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+              <label for="activo-alta" style="font-size: 11px; margin-bottom: 3px;">Estado Operativo</label>
+              <select id="activo-alta" class="form-input" style="padding: 6px 10px; font-size: 12px;" required>
+                <option value="true">Activo (Disponible)</option>
+                <option value="false">Inactivo (No disponible)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary-sm" style="width: 100%; padding: 8px; font-size: 12px;">Guardar Chofer</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: TABLA CON COLGROUP INTEGRADO -->
+      <div class="panel-card" style="display: flex; flex-direction: column; max-height: calc(100vh - 120px);">
+        <div class="panel-header" style="color: white; font-weight: 600; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 15px; font-size: 13px;">
+          <span>Choferes Registrados</span>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <select id="filtro-contratista" class="form-input" style="padding: 4px 8px; font-size: 12px; width: 150px; margin-bottom: 0; background: white; color: #334155;">
+              <option value="">Todos los contratistas</option>
+            </select>
+            <input type="text" id="input-buscar" class="form-input" placeholder="Filtrar por nombre, DNI..." style="padding: 4px 8px; font-size: 12px; width: 160px; margin-bottom: 0; background: white;">
+            <span class="badge-count" id="badge-choferes-count">0 reg.</span>
+          </div>
+        </div>
+        <div class="panel-body" style="padding: 0; overflow-y: auto; flex: 1;">
+          <table class="data-table" style="width: 100%; table-layout: fixed;">
+            <colgroup>
+              <col style="width: 10%;"> <!-- NOMBRE -->
+              <col style="width: 8%;"> <!-- DNI -->
+              <col style="width: 8%;"> <!-- TELÉFONO -->
+              <col style="width: 10%;"> <!-- CONTRATISTA -->
+              <col style="width: 30%;"> <!-- PATENTE ASIGNADA-->
+              <col style="width: 10%;"> <!-- LICENCIA -->
+              <col style="width: 10%;"> <!-- ESTADO -->
+              <col style="width: 14%;"> <!-- ACCIONES -->
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Teléfono</th>
+                <th>Contratista</th>
+                <th>Patente Asignada</th>
+                <th>Licencia</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-choferes-body">
+              <tr>
+                <td colspan="8" class="empty-table-msg">No hay choferes registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL DE EDICIÓN DE CHOFER -->
+  <!-- ========================================== -->
+  <div id="modal-editar-chofer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="panel-card" style="background: white; width: 450px; max-width: 90%; max-height: 90vh; display: flex; flex-direction: column; border-radius: 8px; overflow: hidden;">
+      <div class="panel-header" style="color: white; font-weight: 600; padding: 12px 15px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <span>Editar Chofer</span>
+        <button type="button" id="btn-close-editar-chofer" style="background: none; border: none; color: white; font-size: 16px; cursor: pointer;">&times;</button>
+      </div>
+      <div class="panel-body" style="padding: 15px; overflow-y: auto; flex: 1;">
+        <form id="form-editar-chofer">
+          <input type="hidden" id="edit-chofer-id">
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="edit-nombre" style="font-size: 11px; margin-bottom: 3px;">Nombre y Apellido</label>
+            <input type="text" id="edit-nombre" class="form-input" required style="padding: 6px 10px; font-size: 12px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="edit-dni" style="font-size: 11px; margin-bottom: 3px;">DNI</label>
+            <input type="text" id="edit-dni" class="form-input" required style="padding: 6px 10px; font-size: 12px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="edit-telefono" style="font-size: 11px; margin-bottom: 3px;">Teléfono</label>
+            <input type="text" id="edit-telefono" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="edit-contratista-select" style="font-size: 11px; margin-bottom: 3px;">Contratista Asignado</label>
+            <select id="edit-contratista-select" class="form-input" style="padding: 6px 10px; font-size: 12px;" required>
+              <option value="">Seleccione un contratista...</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="edit-usuario-select" style="font-size: 11px; margin-bottom: 3px;">Usuario Vinculado (Opcional)</label>
+            <select id="edit-usuario-select" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+              <option value="">Sin usuario asociado...</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="edit-vencimiento-licencia" style="font-size: 11px; margin-bottom: 3px;">Vencimiento Licencia</label>
+            <input type="date" id="edit-vencimiento-licencia" class="form-input" style="padding: 6px 10px; font-size: 12px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="file-cedula-chofer" style="font-size: 11px; margin-bottom: 3px;">Actualizar Licencia / Cédula (Archivo)</label>
+            <input type="file" id="file-cedula-chofer" class="form-input" style="padding: 4px; font-size: 11px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 15px;">
+            <label for="edit-activo" style="font-size: 11px; margin-bottom: 3px;">Estado Operativo</label>
+            <select id="edit-activo" class="form-input" style="padding: 6px 10px; font-size: 12px;" required>
+              <option value="true">Activo (Disponible)</option>
+              <option value="false">Inactivo (No disponible)</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="btn-cancelar-editar-chofer" class="btn-primary-sm" style="width: 50%; padding: 8px; font-size: 12px; background: #64748b;">Cancelar</button>
+            <button type="submit" class="btn-primary-sm" style="width: 50%; padding: 8px; font-size: 12px;">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <!-- ========================================== -->
+  <div id="modal-confirmar-eliminar" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; width: 400px; max-width: 90%; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+      <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
+      <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 10px;">¿Confirmar eliminación?</h3>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Esta acción eliminará al usuario del sistema de forma permanente.</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button type="button" id="btn-cancelar-eliminar" style="padding: 8px 20px; font-size: 13px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancelar</button>
+        <button type="button" id="btn-aceptar-eliminar" style="padding: 8px 20px; font-size: 13px; border: none; background: #ef4444; color: white; border-radius: 6px; cursor: pointer; font-weight: 500;">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DE CONFIRMACIÓN DE REASIGNACIÓN -->
+  <!-- ========================================== -->
+  <div id="modal-confirmar-reasignar" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; width: 400px; max-width: 90%; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+      <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
+      <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 10px;">¿Reasignar Unidad?</h3>
+      <p id="modal-reasignar-mensaje" style="font-size: 13px; color: #64748b; margin-bottom: 20px; line-height: 1.4;"></p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button type="button" id="btn-cancelar-reasignar" style="padding: 8px 20px; font-size: 13px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancelar</button>
+        <button type="button" id="btn-aceptar-reasignar" style="padding: 8px 20px; font-size: 13px; border: none; background: #2563eb; color: white; border-radius: 6px; cursor: pointer; font-weight: 500;">Sí, Reasignar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT DE SESIÓN Y MENÚ -->
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const sesionGuardada = localStorage.getItem("andelaz_sesion");
+      if (!sesionGuardada) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const sesion = JSON.parse(sesionGuardada);
+      const permisos = sesion.permisos;
+
+      const elementosPermiso = document.querySelectorAll("[data-perm]");
+      elementosPermiso.forEach(el => {
+        const clavePermiso = el.getAttribute("data-perm");
+        if (permisos[clavePermiso] === false) {
+          el.style.display = "none";
+        }
+      });
+
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          try {
+            if (window.supabaseClient) {
+              await window.supabaseClient.auth.signOut();
+            }
+          } catch (err) {
+            console.error("Error al cerrar sesión:", err);
+          }
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.replace("index.html");
+        });
+      }
+    });
+  </script>
+
+  <!-- Script específico de la página de choferes -->
+  <script src="chofer.js"></script>
+</body>
+</html>

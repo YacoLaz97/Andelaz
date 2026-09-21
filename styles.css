@@ -1,0 +1,784 @@
+/* ==========================================
+   1. CONFIGURACIÓN GENERAL Y VARIABLES
+   ========================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+:root {
+  --primary-blue: #0072ce;
+  --dark-blue: #004b8d;
+  --silver-gray: #8e9aaf;
+  --bg-light: #f4f6f9;
+  --text-dark: #1e293b;
+  --white: #ffffff;
+  --border-color: #e2e8f0;
+  --sidebar-width: 260px;
+}
+
+body {
+  color: var(--text-dark);
+  background-color: var(--bg-light);
+  line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ==========================================
+   2. BOTONES Y MODALES REUTILIZABLES
+   ========================================== */
+.btn-primary-sm {
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary-sm:hover {
+  background: var(--dark-blue);
+}
+
+.btn-ghost-sm {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-ghost-sm:hover {
+  background: #e2e8f0;
+}
+
+/* Modales y Visores */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-card {
+  background: var(--white);
+  width: 100%;
+  max-width: 500px;
+  padding: 30px;
+  border-radius: 16px;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.modal-card img {
+  max-width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin: 15px 0;
+  border: 1px solid var(--border-color);
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: #fee2e2;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  color: #dc2626;
+  font-weight: bold;
+}
+
+/* Form inputs */
+.form-group {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  color: var(--silver-gray);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  font-size: 13px;
+  background: var(--white);
+}
+
+.form-input:focus {
+  border-color: var(--primary-blue);
+}
+
+/* ==========================================
+   3. DASHBOARD Y SIDEBAR
+   ========================================== */
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: #0d1424;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 15px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+.sidebar-header {
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.sidebar-logo {
+  max-width: 100%;
+  height: auto;
+  max-height: 45px;
+  object-fit: contain;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  padding: 10px 16px 4px 16px;
+  font-weight: 600;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: #94a3b8;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.sidebar-item:hover, .sidebar-item.active {
+  background-color: #1a233a;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.has-submenu {
+  position: relative;
+}
+
+.has-submenu .submenu {
+  display: none;
+  padding-left: 15px;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.has-submenu:hover .submenu {
+  display: flex;
+}
+
+.submenu-item {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  display: block;
+}
+
+.submenu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.sidebar-footer {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-profile-card {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-label {
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.profile-value {
+  color: #f1f5f9;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.btn-logout {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+}
+
+.topbar-subtitle {
+  font-size: 13px;
+  color: var(--silver-gray);
+}
+
+/* ==========================================
+   4. ESTÉTICA DE TARJETAS Y TABLAS
+   ========================================== */
+.deposito-card, .panel-card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-color);
+  width: 100%;
+}
+
+.deposito-card-header, .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  background-color: #0f172a;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.deposito-card-header h3, .panel-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+}
+
+.badge-count {
+  background: #ffffff;
+  color: #0f172a;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-block;
+  letter-spacing: 0.3px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filter-bar select, .filter-bar input {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.scrollable-table {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.scrollable-table-large {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.data-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.data-table th {
+  background: var(--bg-light);
+  padding: 10px 6px;
+  font-weight: 600;
+  color: var(--silver-gray);
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.2px;
+}
+
+.data-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table td .badge-cliente {
+  white-space: normal !important;
+  word-break: break-all;
+  line-height: 1.2;
+  padding: 4px 8px;
+}
+
+.data-table td button.btn-action-edit, 
+.data-table td button.btn-action-delete {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  padding: 4px 7px !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  font-size: 11px !important;
+  margin-right: 3px;
+}
+
+.data-table td button.btn-action-delete {
+  background: #ef4444;
+  margin-right: 0;
+}
+
+.badge-cliente {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 11px;
+  max-width: 100%;
+}
+
+.empty-table-msg {
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  flex-grow: 1;
+  padding: 15px 20px;
+  width: calc(100% - var(--sidebar-width));
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.deposito-layout-grid, .content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px !important;
+  width: 100%;
+}
+
+#mapa-distribucion {
+  width: 100%;
+  height: 480px;
+  min-height: 480px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  z-index: 1;
+}
+
+.top-control-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--white);
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ==========================================
+   5. ESCÁNER, OVERLAYS Y TARJETAS DENTRO DE REPARTO
+   ========================================== */
+
+/* Contenedor seguro para el escáner */
+.camera-container {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* Ajuste local del lector de QR para evitar descalce sin afectar otras partes */
+.camera-container #reader {
+  width: 100% !important;
+  border: none !important;
+  background: #000;
+}
+
+.camera-container #reader video {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* Ocultar dashboards nativos de html5-qrcode */
+#reader__dashboard, #reader__status_span {
+  display: none !important;
+}
+
+/* Tarjetas de paquetes compactas */
+.paquete-item-card {
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.paquete-item-card.validado {
+  border-color: #22c55e;
+  background-color: #f0fdf4;
+}
+
+.paquete-info-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sku-texto {
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+}
+
+.paquete-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Overlay "Fantasma" de escaneo exitoso */
+.scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(34, 197, 94, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.scan-overlay i, .scan-overlay img {
+  font-size: 4rem;
+  color: #ffffff;
+  transform: scale(0.7);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+}
+
+.scan-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.scan-overlay.active i, .scan-overlay.active img {
+  transform: scale(1);
+}
+
+/* ==========================================
+   6. RESPONSIVE / MENÚ MÓVIL
+   ========================================== */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 1100;
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
+@media (min-width: 769px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
+  .main-content {
+    margin-left: var(--sidebar-width) !important;
+    width: calc(100% - var(--sidebar-width)) !important;
+  }
+  .mobile-menu-btn {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 75px 15px 20px 15px !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+}
+
+/* ==========================================
+   Efecto Láser Verde para Escáner de Código
+   ========================================== */
+#reader__scan_region {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Línea verde animada dentro del cuadro */
+#reader__scan_region::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #22c55e;
+  box-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e;
+  animation: scanAnimation 2s infinite ease-in-out;
+  z-index: 5;
+}
+
+@keyframes scanAnimation {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: calc(100% - 3px);
+  }
+  100% {
+    top: 0%;
+  }
+}
+
+.resaltar-paquete-flash {
+  background-color: #fef08a !important;
+  border-color: #eab308 !important;
+}
+
+/* Posicionamiento de la mirilla debajo del número de parada */
+.card-left-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+.btn-focus-map {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #007bff;
+    padding: 4px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.btn-focus-map:hover {
+    color: #0056b3;
+    transform: scale(1.15);
+}
+
+/* Estilo para la alerta condicional */
+.alert-badge-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.badge-alert {
+    background-color: #ffc107;
+    color: #000;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.alert-text {
+    font-size: 0.85rem;
+    color: #333;
+}
+
+/* Efecto visual al hacer focus en la tarjeta */
+.package-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+}
+
+.card-highlighted {
+    border-color: #007bff !important;
+    background-color: #f0f7ff !important;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}

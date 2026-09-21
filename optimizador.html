@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Optimizador y Seguimiento - Andelaz Logistics</title>
+
+  <!-- Supabase y SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Leaflet CSS y JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background: #f8fafc; padding-bottom: 30px; }
+    
+    /* Header superior con marco blanco para el logo */
+    .app-header {
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo-container-header {
+      background: #ffffff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      border: 1px solid #e2e8f0;
+    }
+    .logo-container-header img {
+      height: 42px;
+      width: auto;
+    }
+    .app-header h1 {
+      font-size: 16px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+    h2 { margin-bottom: 15px; color: #0f172a; font-size: 20px; }
+    
+    .grid-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 8px; }
+    label { font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px; }
+    select, input, button { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+    
+    button { background: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1d4ed8; }
+    
+    .btn-success { background: #10b981; }
+    .btn-success:hover { background: #059669; }
+
+    .btn-action-map { margin-top: 5px; padding: 6px 10px; font-size: 12px; background: #475569; }
+    .btn-action-map.active { background: #ea580c; }
+
+    /* CONTADORES KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .kpi-card { padding: 12px; border-radius: 8px; color: white; text-align: center; }
+    .kpi-title { font-size: 12px; text-transform: uppercase; font-weight: bold; opacity: 0.9; }
+    .kpi-num { font-size: 24px; font-weight: bold; margin-top: 4px; }
+    .bg-total { background: #3b82f6; }
+    .bg-entregado { background: #10b981; }
+    .bg-pendiente { background: #f59e0b; }
+    .bg-rechazado { background: #ef4444; }
+
+    #map { height: 420px; width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 20px; }
+
+    .table-container { overflow-x: auto; max-height: 400px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    th { background: #1e293b; color: white; position: sticky; top: 0; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER INSTITUCIONAL -->
+  <header class="app-header">
+    <a href="index.html" class="logo-container-header">
+      <img src="https://zmanwspxuqwviyzpxtan.supabase.co/storage/v1/object/public/Imagenes/LOGO%20ANDELAZ%20LOGISTICS1.png" alt="Andelaz Logistics">
+    </a>
+    <h1>Panel de Optimización y Control</h1>
+  </header>
+
+  <div class="container">
+    <h2>Optimizador, Ordenación y Seguimiento</h2>
+
+    <div class="grid-controls">
+      <div>
+        <label>1. Hoja de Ruta (HR):</label>
+        <select id="select-hr"><option value="">-- Seleccionar --</option></select>
+      </div>
+
+      <div>
+        <label>2. Entrega / Sub-Ruta:</label>
+        <select id="select-sub"><option value="">-- Seleccionar --</option></select>
+      </div>
+
+      <div>
+        <label>Punto de Inicio (Carga A):</label>
+        <input type="text" id="input-inicio" placeholder="Dirección o lat, lng" value="-34.6417, -58.5625">
+        <div style="display: flex; gap: 5px;">
+          <button id="btn-buscar-inicio" type="button" class="btn-action-map">Buscar</button>
+          <button id="btn-modo-mapa-a" type="button" class="btn-action-map">Marcar A</button>
+        </div>
+      </div>
+
+      <div>
+        <label>Punto Final (Destino B):</label>
+        <input type="text" id="input-fin" placeholder="Dirección o lat, lng" value="-34.6800, -58.5600">
+        <div style="display: flex; gap: 5px;">
+          <button id="btn-buscar-fin" type="button" class="btn-action-map">Buscar</button>
+          <button id="btn-modo-mapa-b" type="button" class="btn-action-map">Marcar B</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETAS DE CONTADORES DE SEGUIMIENTO -->
+    <div class="kpi-grid">
+      <div class="kpi-card bg-total">
+        <div class="kpi-title">Total Paquetes</div>
+        <div class="kpi-num" id="kpi-total">0</div>
+      </div>
+      <div class="kpi-card bg-entregado">
+        <div class="kpi-title">Entregados</div>
+        <div class="kpi-num" id="kpi-entregados">0</div>
+      </div>
+      <div class="kpi-card bg-pendiente">
+        <div class="kpi-title">Pendientes</div>
+        <div class="kpi-num" id="kpi-pendientes">0</div>
+      </div>
+      <div class="kpi-card bg-rechazado">
+        <div class="kpi-title">Rechazados / No Estaba</div>
+        <div class="kpi-num" id="kpi-no-entregados">0</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+      <button id="btn-optimizar" class="btn-success">Calcular Orden Óptimo de Entrega</button>
+      <button id="btn-exportar">Exportar Recorrido Ordenado (.xlsx)</button>
+      <a href="chofer.html" target="_blank" style="text-decoration: none; margin-left: auto;">
+        <button type="button" style="background: #8b5cf6;">Abrir Ventana Chofer / Rendición</button>
+      </a>
+    </div>
+
+    <div id="map"></div>
+
+    <h3 style="margin-bottom: 10px;">Secuencia y Estado de Reparto</h3>
+    <div class="table-container">
+      <table id="tabla-ordenada">
+        <thead>
+          <tr>
+            <th>Orden de Visita</th>
+            <th>N° Paquete CSV</th>
+            <th>Referencia (CK)</th>
+            <th>Destinatario</th>
+            <th>Estado</th>
+            <th>Receptor / Obs</th>
+            <th>Comprobante</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="7">Seleccioná una HR y Sub-Entrega para comenzar.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="optimizador.js"></script>
+</body>
+</html>

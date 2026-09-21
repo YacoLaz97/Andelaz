@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Andelaz Logistics - Transportes de Carga y Soluciones Logísticas</title>
+  
+  <!-- Ícono de la pestaña (Favicon) -->
+  <link rel="icon" href="./img/web/LOGO ANDELAZ SIMPLE.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Estilos generales y del sistema */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f8fafc; color: #1e293b; line-height: 1.6; }
+
+    /* Header & Navegación */
+    header {
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Caja contenedora blanca para disimular bordes del PNG en el Header */
+    .brand-logo-wrapper {
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      border: 1px solid #e2e8f0;
+      text-decoration: none;
+    }
+    .brand-logo-wrapper img {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .nav-links { display: flex; gap: 20px; align-items: center; list-style: none; }
+    .nav-links a { text-decoration: none; color: #334155; font-weight: 600; font-size: 15px; transition: color 0.2s; }
+    .nav-links a:hover { color: #2563eb; }
+
+    .btn-login {
+      background: #2563eb;
+      color: white !important;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    .btn-login:hover { background: #1d4ed8; }
+
+    /* Sección Principal / Hero */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: white;
+      padding: 70px 20px;
+      text-align: center;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Tarjeta contenedora blanca para el Logo Principal en el Hero */
+    .hero-logo-card {
+      background: #ffffff;
+      padding: 15px 25px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .hero-logo-card img {
+      max-width: 320px;
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .hero h1 {
+      font-size: 38px;
+      font-weight: 800;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+    }
+    .hero p {
+      font-size: 18px;
+      color: #cbd5e1;
+      max-width: 700px;
+      margin: 0 auto 30px auto;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 12px 28px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+    /* Nosotros / Contenido */
+    .section-about {
+      max-width: 1200px;
+      margin: 60px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 40px;
+      align-items: center;
+    }
+    .about-text h2 { font-size: 28px; color: #0f172a; margin-bottom: 15px; }
+    .about-text p { color: #475569; margin-bottom: 20px; font-size: 16px; }
+
+    .stats-grid { display: flex; gap: 30px; margin-top: 20px; }
+    .stat-item h3 { font-size: 32px; color: #2563eb; font-weight: 800; }
+    .stat-item p { font-size: 14px; color: #64748b; font-weight: 600; }
+
+    .about-img img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      object-fit: cover;
+    }
+
+    footer {
+      background: #0f172a;
+      color: #94a3b8;
+      text-align: center;
+      padding: 25px 20px;
+      font-size: 14px;
+      margin-top: 60px;
+    }
+    footer .developer-credit {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #38bdf8;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* ESTILOS DEL MODAL DE LOGIN (FONDO NUBLADO) */
+    .modal-overlay { /* modal-overlay */
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      padding: 15px;
+    }
+
+    .modal-card { /* modal-card */
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.1);
+      text-align: center;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    .modal-logo-wrapper {
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      display: inline-block;
+      margin-bottom: 15px;
+    }
+    .modal-logo-wrapper img {
+      max-width: 200px;
+      height: auto;
+      display: block;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 28px; }
+      .brand-logo-wrapper img { height: 38px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DE ARRIBA -->
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand-logo-wrapper">
+        <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics">
+      </a>
+      <ul class="nav-links">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#nosotros">Nosotros</a></li>
+        <li><button type="button" class="btn-login" onclick="abrirModalLogin()">Iniciar Sesión</button></li>
+      </ul>
+    </div>
+  </header>
+
+  <!--SECCION CENTRO PANTALLA -->
+  <section class="hero" id="inicio">
+    <div class="hero-container">
+      <div class="hero-logo-card">
+        <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics Logo">
+      </div>
+      <h1>Soluciones Logísticas y Transportes de Carga</h1>
+      <p>Optimizando rutas y conectando destinos con máxima precisión, trazabilidad y seguridad operativa.</p>
+      <div class="hero-buttons">
+        <button type="button" class="btn-primary" onclick="abrirModalLogin()">Ingresar al Sistema</button>
+        <a href="#nosotros" class="btn-secondary">Saber Más</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN NOSOTROS -->
+  <section class="section-about" id="nosotros">
+    <div class="about-text">
+      <small style="color: #2563eb; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Quiénes Somos</small>
+      <h2>Excelencia Operativa en Logística Integral</h2>
+      <p>En <strong>Andelaz Logistics</strong> nos dedicamos a transformar la logística tradicional en un proceso ágil, digitalizado y eficiente. Gestionamos la distribución urbana e interurbana de cargas y paquetería adaptándonos a las exigencias de cada cliente.</p>
+      
+      <div class="stats-grid">
+        <div class="stat-item">
+          <h3>+99%</h3>
+          <p>Entregas a Tiempo</p>
+        </div>
+        <div class="stat-item">
+          <h3>100%</h3>
+          <p>Trazabilidad Digital</p>
+        </div>
+      </div>
+    </div>
+    <div class="about-img">
+      <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80" alt="Depósito Andelaz Logistics">
+    </div>
+  </section>
+
+  <!-- VENTANA EMERGENTE (MODAL DE LOGIN) -->
+  <div id="modal-login" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-logo-wrapper">
+        <img src="./img/web/LOGO ANDELAZ LOGISTICS1.png" alt="Andelaz Logistics">
+      </div>
+
+      <h3 style="margin-bottom: 15px; color: #0f172a; font-size: 18px; font-weight: 700;">Acceso al Sistema</h3>
+
+      <!-- Formulario controlado por app.js -->
+      <form id="form-login-modal">
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Usuario:</label>
+          <input type="text" id="login-user" required placeholder="Ej: Yaco" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
+        </div>
+
+        <div style="text-align: left; margin-bottom: 18px;">
+          <label style="font-size: 12px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Contraseña:</label>
+          <input type="password" id="login-pass" required placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
+        </div>
+
+        <button type="submit" style="width: 100%; padding: 11px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Ingresar</button>
+        <button type="button" onclick="cerrarModalLogin()" style="width: 100%; padding: 10px; background: #64748b; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 14px;">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TARJETA FLOTANTE DE NOTIFICACIONES -->
+  <div id="modal-alerta" class="modal-overlay" style="z-index: 3000;">
+    <div class="modal-card" style="max-width: 340px;">
+      <h4 id="alerta-titulo" style="font-size: 18px; font-weight: bold; margin-bottom: 10px;"></h4>
+      <p id="alerta-mensaje" style="font-size: 14px; color: #475569; margin-bottom: 20px;"></p>
+      <button type="button" id="alerta-btn-aceptar" style="width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Aceptar</button>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Andelaz Logistics - Todos los derechos reservados.</p>
+    <p class="developer-credit">Desarrollado por Yaco</p>
+  </footer>
+
+  <!-- Lógica de control del Modal -->
+  <script>
+    function abrirModalLogin() {
+      document.getElementById('modal-login').style.display = 'flex';
+    }
+
+    function cerrarModalLogin() {
+      document.getElementById('modal-login').style.display = 'none';
+    }
+  </script>
+
+  <!-- Script principal de la aplicación -->
+  <script src="app.js"></script>
+
+</body>
+</html>
